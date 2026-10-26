@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { masterResume, MasterResumeData } from "@/src/data/masterResume";
 import { ResumeDocument } from "@/src/components/ResumeDocument";
 import { Sparkles, Printer, Loader2, Edit3, Wand2, ChevronDown, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
@@ -9,6 +9,11 @@ export default function Home() {
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "edit">("ai");
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const [resumeData, setResumeData] = useState<MasterResumeData>(masterResume);
 
@@ -161,7 +166,7 @@ export default function Home() {
 
       <main className="min-h-screen bg-zinc-800 flex flex-col xl:flex-row">
         {/* Control Panel - DARK THEME */}
-        <div className="w-full xl:w-120 flex flex-col border-r border-zinc-800 bg-zinc-950 h-screen print:hidden">
+        <div className="w-full xl:w-125 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950 h-[120vh] print:hidden">
 
           {/* Header */}
           <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950">
@@ -192,7 +197,12 @@ export default function Home() {
                   placeholder="Paste Job Description..."
                   className={`w-full min-h-[300px] font-mono leading-relaxed resize-y ${inputClass}`}
                 />
-                <button onClick={handleTailor} disabled={loading || !jobDescription.trim()} className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium py-3 px-4 rounded-lg disabled:opacity-50 transition border border-blue-500 shadow-lg shadow-blue-900/20">
+                <button
+                  onClick={handleTailor}
+                  disabled={!isMounted || loading || !jobDescription.trim()}
+                  suppressHydrationWarning
+                  className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium py-3 px-4 rounded-lg disabled:opacity-50 transition border border-blue-500 shadow-lg shadow-blue-900/20"
+                >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                   Tailor Resume
                 </button>
@@ -223,8 +233,8 @@ export default function Home() {
                         key={key}
                         onClick={() => toggleSection(key as keyof MasterResumeData['sections'])}
                         className={`flex items-center justify-between p-2 rounded border transition ${isVisible
-                            ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
-                            : 'bg-zinc-950 border-zinc-800 text-zinc-500 line-through'
+                          ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
+                          : 'bg-zinc-950 border-zinc-800 text-zinc-500 line-through'
                           }`}
                       >
                         <span className="capitalize">{key}</span>
