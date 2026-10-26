@@ -73,6 +73,23 @@ export default function Home() {
     setResumeData({ ...resumeData, publications: newPubs });
   };
 
+  // Font size step adjuster function for +/- buttons
+  const adjustSize = (key: keyof MasterResumeData['styles'], direction: 'inc' | 'dec', e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevents details accordion from toggling when clicking + / -
+    const sizes = ["text-[9px]", "text-[10px]", "text-[11px]", "text-xs", "text-sm", "text-base"];
+    const current = resumeData.styles[key] as string;
+    let idx = sizes.indexOf(current);
+    if (idx === -1) idx = 2; // default fallback
+
+    if (direction === 'inc' && idx < sizes.length - 1) idx++;
+    if (direction === 'dec' && idx > 0) idx--;
+
+    setResumeData({
+      ...resumeData,
+      styles: { ...resumeData.styles, [key]: sizes[idx] }
+    });
+  };
+
   // Base classes for inputs to keep things dry
   const inputClass = "p-2 text-xs border border-zinc-700 bg-zinc-900 text-zinc-100 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-zinc-500";
 
@@ -106,12 +123,12 @@ export default function Home() {
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-zinc-800 text-sm font-medium bg-zinc-950">
-            <button onClick={() => setActiveTab("ai")} className={`flex-1 py-3 flex items-center justify-center gap-2 transition ${activeTab === "ai" ? "text-blue-400 border-b-2 border-blue-500 bg-zinc-900/50" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}>
-              <Wand2 className="w-4 h-4" /> AI Tailor
+          <div className="flex border-b border-zinc-800 text-xs font-medium bg-zinc-950">
+            <button onClick={() => setActiveTab("ai")} className={`flex-1 py-3 flex items-center justify-center gap-1.5 transition ${activeTab === "ai" ? "text-blue-400 border-b-2 border-blue-500 bg-zinc-900/50" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}>
+              <Wand2 className="w-3.5 h-3.5" /> AI Tailor
             </button>
-            <button onClick={() => setActiveTab("edit")} className={`flex-1 py-3 flex items-center justify-center gap-2 transition ${activeTab === "edit" ? "text-blue-400 border-b-2 border-blue-500 bg-zinc-900/50" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}>
-              <Edit3 className="w-4 h-4" /> Comprehensive Edit
+            <button onClick={() => setActiveTab("edit")} className={`flex-1 py-3 flex items-center justify-center gap-1.5 transition ${activeTab === "edit" ? "text-blue-400 border-b-2 border-blue-500 bg-zinc-900/50" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}>
+              <Edit3 className="w-3.5 h-3.5" /> Content Edit
             </button>
           </div>
 
@@ -134,10 +151,25 @@ export default function Home() {
             ) : (
               <div className="flex flex-col gap-3 text-sm">
 
+                {/* Universal Font Style Selector */}
+                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-between">
+                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">Universal Font Style</span>
+                  <select 
+                    value={resumeData.styles.fontFamily} 
+                    onChange={(e) => setResumeData({...resumeData, styles: {...resumeData.styles, fontFamily: e.target.value}})}
+                    className="p-1.5 text-xs bg-zinc-950 border border-zinc-700 text-zinc-100 rounded focus:outline-none"
+                  >
+                    <option value="font-sans">Sans-Serif (Arial/Inter)</option>
+                    <option value="font-serif">Serif (Times New Roman)</option>
+                    <option value="font-mono">Monospace (Code)</option>
+                  </select>
+                </div>
+
                 {/* Personal Info */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
-                    Personal & Links <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                    <span>Personal & Links</span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 grid grid-cols-2 gap-3 bg-zinc-950 border-t border-zinc-800">
                     <input type="text" value={resumeData.personalInfo.name} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, name: e.target.value } })} className={inputClass} placeholder="Name" />
@@ -154,7 +186,15 @@ export default function Home() {
                 {/* Profile Summary */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
-                    Profile Summary <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                    <span className="flex items-center gap-2">
+                      Profile Summary
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('summaryTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('summaryTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 border-t border-zinc-800 bg-zinc-950">
                     <textarea value={resumeData.profileSummary} onChange={(e) => setResumeData({ ...resumeData, profileSummary: e.target.value })} className={`w-full h-32 ${inputClass}`} />
@@ -164,7 +204,15 @@ export default function Home() {
                 {/* Skills */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
-                    Skills <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                    <span className="flex items-center gap-2">
+                      Skills
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('skillsTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('skillsTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 space-y-3 border-t border-zinc-800 bg-zinc-950">
                     <div>
@@ -185,7 +233,15 @@ export default function Home() {
                 {/* Projects */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden" open>
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
-                    Projects <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                    <span className="flex items-center gap-2">
+                      Projects
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('projectTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('projectTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 space-y-6 border-t border-zinc-800 bg-zinc-950">
                     {resumeData.allProjects.map((project, idx) => (
@@ -196,9 +252,9 @@ export default function Home() {
                         </div>
 
                         <div className="flex gap-4 text-xs font-medium text-zinc-400">
-                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={project.links.live} onChange={(e) => updateProjectLinks(idx, 'live', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Live Site</label>
-                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={project.links.frontend} onChange={(e) => updateProjectLinks(idx, 'frontend', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Frontend</label>
-                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={project.links.backend} onChange={(e) => updateProjectLinks(idx, 'backend', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Backend</label>
+                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={Boolean(project.links.live)} onChange={(e) => updateProjectLinks(idx, 'live', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Live Site</label>
+                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={Boolean(project.links.frontend)} onChange={(e) => updateProjectLinks(idx, 'frontend', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Frontend</label>
+                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={Boolean(project.links.backend)} onChange={(e) => updateProjectLinks(idx, 'backend', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Backend</label>
                         </div>
 
                         <div>
@@ -222,7 +278,15 @@ export default function Home() {
                 {/* Education */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
-                    Education <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                    <span className="flex items-center gap-2">
+                      Education
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('educationTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('educationTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 grid grid-cols-2 gap-3 border-t border-zinc-800 bg-zinc-950">
                     <input type="text" value={resumeData.education.degree} onChange={(e) => setResumeData({ ...resumeData, education: { ...resumeData.education, degree: e.target.value } })} className={`${inputClass} col-span-2`} placeholder="Degree" />
@@ -235,7 +299,15 @@ export default function Home() {
                 {/* Publications */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
-                    Publications <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                    <span className="flex items-center gap-2">
+                      Publications
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('publicationTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('publicationTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
                     {resumeData.publications.map((pub, idx) => (
