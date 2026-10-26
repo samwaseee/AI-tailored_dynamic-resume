@@ -29,11 +29,12 @@ interface ResumeDocumentProps {
 export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
   ({ data }, ref) => {
     const s = data.styles;
+    const sec = data.sections;
 
     return (
       <div
         ref={ref}
-        className={`w-[210mm] h-[297mm] overflow-hidden bg-white text-gray-900 p-15 shadow-md print:shadow-none print:w-[210mm] print:h-[297mm] ${s.fontFamily} leading-snug`}
+        className={`w-[210mm] min-h-[297mm] overflow-hidden bg-white text-gray-900 p-15 shadow-md print:shadow-none print:w-[210mm] print:min-h-[297mm] ${s.fontFamily} leading-snug`}
         style={{ boxSizing: "border-box" }}
       >
         {/* Header */}
@@ -51,152 +52,160 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
         </header>
 
         {/* Profile */}
-        <section className="mb-3">
-          <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1.5`}>
-            Profile
-          </h2>
-          <p className={`${s.summaryTextSize} text-gray-800 text-justify px-2`}>
-            {data.profileSummary}
-          </p>
-        </section>
+        {sec?.profile && (
+          <section className="mb-3">
+            <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1.5`}>
+              Profile
+            </h2>
+            <p className={`${s.summaryTextSize} text-gray-800 text-justify px-2`}>
+              {data.profileSummary}
+            </p>
+          </section>
+        )}
 
-        {/* Skills */}
-        <section className="mb-5">
-          <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-2`}>
-            Skills
-          </h2>
-          <div className={`px-2 space-y-1.5 ${s.skillsTextSize}`}>
+        {/* SKILLS SECTION */}
+        {data.sections.skills && (
+          <div className="mb-4">
+            <h2 className={`font-bold uppercase tracking-wider mb-1 ${data.styles.sectionTitleSize} ${data.styles.sectionTitleBg} px-2 py-0.5`}>
+              Skills
+            </h2>
 
-            {data.skills.expertise.length > 0 && (
-              <div className="grid grid-cols-[85px_repeat(7,1fr)] items-start gap-y-1">
-                <span className="font-bold text-gray-900">Expertise</span>
-                {data.skills.expertise.map((skill, i) => (
-                  <span key={i} className="flex items-center gap-1 font-medium text-gray-700 whitespace-nowrap">
-                    <span className="text-[12px] leading-none text-gray-400">•</span> {skill}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {data.skills.comfortable.length > 0 && (
-              <div className="grid grid-cols-[85px_repeat(7,1fr)] items-start gap-y-1">
-                <span className="font-bold text-gray-900">Comfortable</span>
-                {data.skills.comfortable.map((skill, i) => (
-                  <span key={i} className="flex items-center gap-1 font-medium text-gray-700 whitespace-nowrap">
-                    <span className="text-[12px] leading-none text-gray-400">•</span> {skill}
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {data.skills.familiar.length > 0 && (
-              <div className="grid grid-cols-[85px_repeat(7,1fr)] items-start gap-y-1">
-                <span className="font-bold text-gray-900">Familiar</span>
-                {data.skills.familiar.map((skill, i) => (
-                  <span key={i} className="flex items-center gap-1 font-medium text-gray-700 whitespace-nowrap">
-                    <span className="text-[12px] leading-none text-gray-400">•</span> {skill}
-                  </span>
-                ))}
-              </div>
-            )}
-
-          </div>
-        </section>
-
-        {/* Projects */}
-        <section className="mb-5">
-          <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-2`}>
-            Projects
-          </h2>
-          <div className={`px-2 space-y-4 ${s.projectTextSize}`}>
-            {data.allProjects.map((project) => (
-              <div key={project.id}>
-
-                {/* Top Row: Title & Icons on the left, Subtitle on the right */}
-                <div className="flex justify-between items-center mb-1">
-
-                  {/* Left Group: Title + Link Icons */}
-                  <div className="flex items-center gap-3">
-                    <span className={`${s.projectTitleBold ? "font-bold" : "font-normal"} text-gray-900 text-[13px]`}>{project.title}</span>
-
-                    <div className="flex items-center gap-2.5 text-[10px] font-semibold">
-                      <a
-                        href={typeof project.links.live === "string" && project.links.live ? project.links.live : undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`flex items-center gap-1 ${project.links.live ? 'text-blue-600 hover:underline' : 'text-gray-300 pointer-events-none'}`}
-                      >
-                        <Globe size={10} strokeWidth={2.5} /> Live site
-                      </a>
-                      <a
-                        href={typeof project.links.frontend === "string" && project.links.frontend ? project.links.frontend : undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`flex items-center gap-1 ${project.links.frontend ? 'text-blue-600 hover:underline' : 'text-gray-300 pointer-events-none'}`}
-                      >
-                        <AppWindow size={10} strokeWidth={2.5} /> Frontend
-                      </a>
-                      <a
-                        href={typeof project.links.backend === "string" && project.links.backend ? project.links.backend : undefined}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`flex items-center gap-1 ${project.links.backend ? 'text-blue-600 hover:underline' : 'text-gray-300 pointer-events-none'}`}
-                      >
-                        <Server size={10} strokeWidth={2.5} /> Backend
-                      </a>
-                    </div>
+            {(data.styles.skillsLayout || "tier") === "tier" ? (
+              /* Existing Tiered View */
+              <div className={`space-y-1 ${data.styles.skillsTextSize}`}>
+                {data.skills.expertise && data.skills.expertise.length > 0 && (
+                  <div className="flex">
+                    <span className="font-bold w-28 shrink-0">Expertise</span>
+                    <span className="text-zinc-700">• {data.skills.expertise.join(" • ")}</span>
                   </div>
-
-                  {/* Right Group: Subtitle */}
-                  <span className="text-gray-700 italic text-[11px] whitespace-nowrap ml-4">
-                    {project.subtitle}
-                  </span>
-
-                </div>
-
-                <ul className="list-disc list-outside ml-3 text-gray-800 space-y-1 leading-relaxed mt-1">
-                  {project.bullets.map((b, idx) => (
-                    <li key={idx} className="pl-1">{b}</li>
-                  ))}
-                </ul>
-                {project.technologies && (
-                  <p className="text-[10px] text-gray-700 mt-1.5">
-                    <span className="font-bold text-gray-900">Technologies: </span>{project.technologies}
-                  </p>
+                )}
+                {data.skills.comfortable && data.skills.comfortable.length > 0 && (
+                  <div className="flex">
+                    <span className="font-bold w-28 shrink-0">Comfortable</span>
+                    <span className="text-zinc-700">• {data.skills.comfortable.join(" • ")}</span>
+                  </div>
+                )}
+                {data.skills.familiar && data.skills.familiar.length > 0 && (
+                  <div className="flex">
+                    <span className="font-bold w-28 shrink-0">Familiar</span>
+                    <span className="text-zinc-700">• {data.skills.familiar.join(" • ")}</span>
+                  </div>
                 )}
               </div>
-            ))}
+            ) : (
+              /* New Categorized View */
+              <div className={`space-y-1 ${data.styles.skillsTextSize}`}>
+                {data.skills.categories?.map((cat, idx) => (
+                  <div key={idx} className="flex">
+                    <span className="font-bold w-36 shrink-0">{cat.label}:</span>
+                    <span className="text-zinc-700">{cat.items.join(", ")}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </section>
+        )}
+
+        {/* Projects */}
+        {sec?.projects && (
+          <section className="mb-5">
+            <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-2`}>
+              Projects
+            </h2>
+            <div className={`px-2 space-y-4 ${s.projectTextSize}`}>
+              {data.allProjects.map((project) => (
+                <div key={project.id}>
+
+                  {/* Top Row: Title & Icons on the left, Subtitle on the right */}
+                  <div className="flex justify-between items-center mb-1">
+
+                    {/* Left Group: Title + Link Icons */}
+                    <div className="flex items-center gap-3">
+                      <span className={`${s.projectTitleBold ? "font-bold" : "font-normal"} text-gray-900 text-[13px]`}>{project.title}</span>
+
+                      <div className="flex items-center gap-2.5 text-[10px] font-semibold">
+                        <a
+                          href={typeof project.links.live === "string" && project.links.live ? project.links.live : undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`flex items-center gap-1 ${project.links.live ? 'text-blue-600 hover:underline' : 'text-gray-300 pointer-events-none'}`}
+                        >
+                          <Globe size={10} strokeWidth={2.5} /> Live site
+                        </a>
+                        <a
+                          href={typeof project.links.frontend === "string" && project.links.frontend ? project.links.frontend : undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`flex items-center gap-1 ${project.links.frontend ? 'text-blue-600 hover:underline' : 'text-gray-300 pointer-events-none'}`}
+                        >
+                          <AppWindow size={10} strokeWidth={2.5} /> Frontend
+                        </a>
+                        <a
+                          href={typeof project.links.backend === "string" && project.links.backend ? project.links.backend : undefined}
+                          target="_blank"
+                          rel="noreferrer"
+                          className={`flex items-center gap-1 ${project.links.backend ? 'text-blue-600 hover:underline' : 'text-gray-300 pointer-events-none'}`}
+                        >
+                          <Server size={10} strokeWidth={2.5} /> Backend
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Right Group: Subtitle */}
+                    <span className="text-gray-700 italic text-[11px] whitespace-nowrap ml-4">
+                      {project.subtitle}
+                    </span>
+
+                  </div>
+
+                  <ul className="list-disc list-outside ml-3 text-gray-800 space-y-1 leading-relaxed mt-1">
+                    {project.bullets.map((b, idx) => (
+                      <li key={idx} className="pl-1">{b}</li>
+                    ))}
+                  </ul>
+                  {project.technologies && (
+                    <p className="text-[10px] text-gray-700 mt-1.5">
+                      <span className="font-bold text-gray-900">Technologies: </span>{project.technologies}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Education */}
-        <section className="mb-3">
-          <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1.5`}>
-            Education
-          </h2>
-          <div className={`px-2 flex justify-between items-start ${s.educationTextSize}`}>
-            <div>
-              <p className={`${s.educationTitleBold ? "font-bold" : "font-normal"} text-[12px] text-gray-900`}>{data.education.degree}</p>
-              <p className="text-gray-800">{data.education.institution}</p>
-              <p className="text-gray-700">CGPA: {data.education.cgpa}</p>
+        {sec?.education && (
+          <section className="mb-3">
+            <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1.5`}>
+              Education
+            </h2>
+            <div className={`px-2 flex justify-between items-start ${s.educationTextSize}`}>
+              <div>
+                <p className={`${s.educationTitleBold ? "font-bold" : "font-normal"} text-[12px] text-gray-900`}>{data.education.degree}</p>
+                <p className="text-gray-800">{data.education.institution}</p>
+                <p className="text-gray-700">CGPA: {data.education.cgpa}</p>
+              </div>
+              <span className="font-medium text-gray-700">{data.education.duration}</span>
             </div>
-            <span className="font-medium text-gray-700">{data.education.duration}</span>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Publications */}
-        <section>
-          <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1.5`}>
-            Publications
-          </h2>
-          <ul className={`px-2 list-disc list-outside ml-3 text-gray-800 space-y-1 ${s.publicationTextSize}`}>
-            {data.publications.map((pub, idx) => (
-              <li key={idx} className="pl-1">
-                {pub.authors}, "{pub.title}," <span className="italic">{pub.venue}</span>. DOI: {pub.doi}
-              </li>
-            ))}
-          </ul>
-        </section>
+        {sec?.publications && (
+          <section>
+            <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1.5`}>
+              Publications
+            </h2>
+            <ul className={`px-2 list-disc list-outside ml-3 text-gray-800 space-y-1 ${s.publicationTextSize}`}>
+              {data.publications.map((pub, idx) => (
+                <li key={idx} className="pl-1">
+                  {pub.authors}, "{pub.title}," <span className="italic">{pub.venue}</span>. DOI: {pub.doi}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     );
   }

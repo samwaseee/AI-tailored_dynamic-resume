@@ -14,6 +14,14 @@ export interface Publication {
   doi: string;
 }
 
+export interface ResumeSectionsVisibility {
+  profile: boolean;
+  skills: boolean;
+  projects: boolean;
+  education: boolean;
+  publications: boolean;
+}
+
 export interface ResumeStyles {
   fontFamily: string; // e.g. "font-sans", "font-serif", "font-mono"
   nameSize: string; // e.g. "text-2xl", "text-3xl", "text-4xl"
@@ -22,6 +30,8 @@ export interface ResumeStyles {
   sectionTitleSize: string; // e.g. "text-xs", "text-sm", "text-base"
   sectionTitleBold: boolean;
   sectionTitleBg: string; // e.g. "bg-gray-200"
+
+  skillsLayout: "tier" | "category";
 
   // Body text sizes
   summaryTextSize: string;
@@ -50,6 +60,7 @@ export interface MasterResumeData {
     expertise: string[];
     comfortable: string[];
     familiar: string[];
+    categories?: { label: string; items: string[] }[];
   };
   allProjects: Project[];
   education: {
@@ -59,6 +70,7 @@ export interface MasterResumeData {
     duration: string;
   };
   publications: Publication[];
+  sections: ResumeSectionsVisibility;
   styles: ResumeStyles;
 }
 
@@ -102,6 +114,41 @@ export const masterResume: MasterResumeData = {
       "Bootstrap",
       "Antd",
       "Framer Motion",
+    ],
+    categories: [
+      {
+        label: "Languages",
+        items: ["JavaScript", "TypeScript", "C++", "Python", "Dart"],
+      },
+      {
+        label: "Web Technologies",
+        items: [
+          "Next.js",
+          "React",
+          "Node.js",
+          "Express.js",
+          "Tailwind CSS",
+          "HTML",
+          "CSS",
+          "React Query",
+        ],
+      },
+      {
+        label: "Mobile Development",
+        items: ["Flutter", "GetX"],
+      },
+      {
+        label: "Databases & Tools",
+        items: [
+          "MongoDB",
+          "PostgreSQL",
+          "Firebase",
+          "Git",
+          "REST APIs",
+          "Redux",
+          "JWT",
+        ],
+      },
     ],
   },
   allProjects: [
@@ -161,7 +208,7 @@ export const masterResume: MasterResumeData = {
     degree: "Bachelor of Science in Computer Science and Engineering",
     institution: "International Islamic University, Chittagong",
     cgpa: "3.6",
-    duration: "2022 - present",
+    duration: "2022 - 2026",
   },
   publications: [
     {
@@ -184,6 +231,13 @@ export const masterResume: MasterResumeData = {
       doi: "10.1109/QPAIN69676.2026.11545987",
     },
   ],
+  sections: {
+    profile: true,
+    skills: true,
+    projects: true,
+    education: true,
+    publications: true,
+  },
   styles: {
     fontFamily: "font-sans",
     nameSize: "text-3xl",
@@ -191,6 +245,7 @@ export const masterResume: MasterResumeData = {
     sectionTitleSize: "text-sm",
     sectionTitleBold: true,
     sectionTitleBg: "bg-gray-200",
+    skillsLayout: "tier",
     summaryTextSize: "text-[11px]",
     skillsTextSize: "text-[11px]",
     projectTextSize: "text-[11px]",

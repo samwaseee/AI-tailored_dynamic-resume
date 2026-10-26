@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { masterResume, MasterResumeData } from "@/src/data/masterResume";
 import { ResumeDocument } from "@/src/components/ResumeDocument";
-import { Sparkles, Printer, Loader2, Edit3, Wand2, ChevronDown } from "lucide-react";
+import { Sparkles, Printer, Loader2, Edit3, Wand2, ChevronDown, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 
 export default function Home() {
   const [jobDescription, setJobDescription] = useState("");
@@ -37,6 +37,7 @@ export default function Home() {
         const newData = { ...prev };
         if (data.selectedSkills) {
           newData.skills = {
+            ...newData.skills,
             expertise: masterResume.skills.expertise.filter(s => data.selectedSkills.includes(s)),
             comfortable: masterResume.skills.comfortable.filter(s => data.selectedSkills.includes(s)),
             familiar: masterResume.skills.familiar.filter(s => data.selectedSkills.includes(s)),
@@ -61,16 +62,68 @@ export default function Home() {
     setResumeData({ ...resumeData, allProjects: newProjects });
   };
 
-  const updateProjectLinks = (idx: number, linkField: 'live' | 'frontend' | 'backend', checked: boolean) => {
+  const updateProjectLinksUrl = (idx: number, linkField: 'live' | 'frontend' | 'backend', urlVal: string) => {
     const newProjects = [...resumeData.allProjects];
-    newProjects[idx].links = { ...newProjects[idx].links, [linkField]: checked };
+    newProjects[idx].links = { ...newProjects[idx].links, [linkField]: urlVal };
     setResumeData({ ...resumeData, allProjects: newProjects });
+  };
+
+  const addProject = () => {
+    const newProj = {
+      id: `project-${Date.now()}`,
+      title: "New Project Title",
+      subtitle: "Project Subtitle / Tech Stack Overview",
+      links: { live: "", frontend: "", backend: "" },
+      bullets: ["Describe a key achievement or feature implemented."],
+      technologies: "Next.js, Tailwind CSS, TypeScript",
+    };
+    setResumeData({
+      ...resumeData,
+      allProjects: [...resumeData.allProjects, newProj],
+    });
+  };
+
+  const deleteProject = (idx: number) => {
+    const newProjects = resumeData.allProjects.filter((_, i) => i !== idx);
+    setResumeData({
+      ...resumeData,
+      allProjects: newProjects,
+    });
+  };
+
+  const addSkillCategory = () => {
+    const newCategories = [
+      ...(resumeData.skills.categories || []),
+      { label: "New Category", items: ["Skill 1", "Skill 2"] }
+    ];
+    setResumeData({
+      ...resumeData,
+      skills: { ...resumeData.skills, categories: newCategories }
+    });
+  };
+
+  const deleteSkillCategory = (cIdx: number) => {
+    const newCategories = (resumeData.skills.categories || []).filter((_, i) => i !== cIdx);
+    setResumeData({
+      ...resumeData,
+      skills: { ...resumeData.skills, categories: newCategories }
+    });
   };
 
   const updatePublication = (idx: number, field: string, val: string) => {
     const newPubs = [...resumeData.publications];
     newPubs[idx] = { ...newPubs[idx], [field]: val };
     setResumeData({ ...resumeData, publications: newPubs });
+  };
+
+  const toggleSection = (sectionKey: keyof MasterResumeData['sections']) => {
+    setResumeData({
+      ...resumeData,
+      sections: {
+        ...resumeData.sections,
+        [sectionKey]: !resumeData.sections[sectionKey]
+      }
+    });
   };
 
   // Font size step adjuster function for +/- buttons
@@ -95,10 +148,6 @@ export default function Home() {
 
   return (
     <>
-      {/* 
-        Injecting print styles directly to override browser defaults. 
-        This guarantees the PDF export has no margins and prints the background colors.
-      */}
       <style>{`
         @media print {
           @page { size: A4; margin: 0; }
@@ -154,15 +203,35 @@ export default function Home() {
                 {/* Universal Font Style Selector */}
                 <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg flex items-center justify-between">
                   <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">Universal Font Style</span>
-                  <select 
-                    value={resumeData.styles.fontFamily} 
-                    onChange={(e) => setResumeData({...resumeData, styles: {...resumeData.styles, fontFamily: e.target.value}})}
+                  <select
+                    value={resumeData.styles.fontFamily}
+                    onChange={(e) => setResumeData({ ...resumeData, styles: { ...resumeData.styles, fontFamily: e.target.value } })}
                     className="p-1.5 text-xs bg-zinc-950 border border-zinc-700 text-zinc-100 rounded focus:outline-none"
                   >
                     <option value="font-sans">Sans-Serif (Arial/Inter)</option>
                     <option value="font-serif">Serif (Times New Roman)</option>
                     <option value="font-mono">Monospace (Code)</option>
                   </select>
+                </div>
+
+                {/* Section Visibility Switches Panel */}
+                <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg space-y-2">
+                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider block">Section Visibility Switches</span>
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                    {Object.entries(resumeData.sections).map(([key, isVisible]) => (
+                      <button
+                        key={key}
+                        onClick={() => toggleSection(key as keyof MasterResumeData['sections'])}
+                        className={`flex items-center justify-between p-2 rounded border transition ${isVisible
+                            ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
+                            : 'bg-zinc-950 border-zinc-800 text-zinc-500 line-through'
+                          }`}
+                      >
+                        <span className="capitalize">{key}</span>
+                        {isVisible ? <Eye size={14} className="text-blue-400" /> : <EyeOff size={14} className="text-zinc-600" />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Personal Info */}
@@ -214,19 +283,89 @@ export default function Home() {
                     </span>
                     <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
-                  <div className="p-4 space-y-3 border-t border-zinc-800 bg-zinc-950">
-                    <div>
-                      <span className="text-[10px] text-zinc-400 font-bold block mb-1">Expertise</span>
-                      <input type="text" value={resumeData.skills.expertise.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, expertise: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
+                  <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
+
+                    {/* Layout Selector Toggle */}
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase">Display Format</span>
+                      <select
+                        value={resumeData.styles.skillsLayout || "tier"}
+                        onChange={(e) => setResumeData({
+                          ...resumeData,
+                          styles: { ...resumeData.styles, skillsLayout: e.target.value as "tier" | "category" }
+                        })}
+                        className="p-1 text-[11px] bg-zinc-900 border border-zinc-700 text-zinc-100 rounded focus:outline-none"
+                      >
+                        <option value="tier">Tiered (Expertise / Comfortable / Familiar)</option>
+                        <option value="category">Categorized (Languages, Web Tech, etc.)</option>
+                      </select>
                     </div>
-                    <div>
-                      <span className="text-[10px] text-zinc-400 font-bold block mb-1">Comfortable</span>
-                      <input type="text" value={resumeData.skills.comfortable.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, comfortable: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-zinc-400 font-bold block mb-1">Familiar</span>
-                      <input type="text" value={resumeData.skills.familiar.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, familiar: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
-                    </div>
+
+                    {(resumeData.styles.skillsLayout || "tier") === "tier" ? (
+                      <>
+                        <div>
+                          <span className="text-[10px] text-zinc-400 font-bold block mb-1">Expertise</span>
+                          <input type="text" value={resumeData.skills.expertise.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, expertise: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-zinc-400 font-bold block mb-1">Comfortable</span>
+                          <input type="text" value={resumeData.skills.comfortable.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, comfortable: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-zinc-400 font-bold block mb-1">Familiar</span>
+                          <input type="text" value={resumeData.skills.familiar.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, familiar: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-4">
+                        <span className="text-[10px] text-zinc-500 block">Edit category labels and items (comma-separated):</span>
+                        {(resumeData.skills.categories || []).map((cat, cIdx) => (
+                          <div key={cIdx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-[11px] font-semibold text-zinc-400">Category #{cIdx + 1}</span>
+                              <button
+                                onClick={() => deleteSkillCategory(cIdx)}
+                                className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                              >
+                                <Trash2 className="w-3 h-3" /> Delete
+                              </button>
+                            </div>
+                            <div className="space-y-1.5">
+                              <input
+                                type="text"
+                                value={cat.label}
+                                onChange={(e) => {
+                                  const newCats = [...(resumeData.skills.categories || [])];
+                                  newCats[cIdx].label = e.target.value;
+                                  setResumeData({ ...resumeData, skills: { ...resumeData.skills, categories: newCats } });
+                                }}
+                                className={`w-full font-bold ${inputClass}`}
+                                placeholder="Category Name (e.g. Languages)"
+                              />
+                              <input
+                                type="text"
+                                value={cat.items.join(", ")}
+                                onChange={(e) => {
+                                  const newCats = [...(resumeData.skills.categories || [])];
+                                  newCats[cIdx].items = e.target.value.split(",").map(s => s.trim());
+                                  setResumeData({ ...resumeData, skills: { ...resumeData.skills, categories: newCats } });
+                                }}
+                                className={`w-full ${inputClass}`}
+                                placeholder="Items (comma-separated)..."
+                              />
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Add Category Button */}
+                        <button
+                          onClick={addSkillCategory}
+                          className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
+                        >
+                          <Plus className="w-3.5 h-3.5" /> Add New Category
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </details>
 
@@ -246,15 +385,47 @@ export default function Home() {
                   <div className="p-4 space-y-6 border-t border-zinc-800 bg-zinc-950">
                     {resumeData.allProjects.map((project, idx) => (
                       <div key={project.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-semibold text-zinc-400">Project #{idx + 1}</span>
+                          <button
+                            onClick={() => deleteProject(idx)}
+                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+
                         <div className="grid grid-cols-2 gap-2">
                           <input type="text" value={project.title} onChange={(e) => updateProject(idx, "title", e.target.value)} className={`${inputClass} font-bold text-white`} placeholder="Project Title" />
                           <input type="text" value={project.subtitle} onChange={(e) => updateProject(idx, "subtitle", e.target.value)} className={inputClass} placeholder="Subtitle" />
                         </div>
 
-                        <div className="flex gap-4 text-xs font-medium text-zinc-400">
-                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={Boolean(project.links.live)} onChange={(e) => updateProjectLinks(idx, 'live', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Live Site</label>
-                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={Boolean(project.links.frontend)} onChange={(e) => updateProjectLinks(idx, 'frontend', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Frontend</label>
-                          <label className="flex items-center gap-1 cursor-pointer hover:text-zinc-200 transition"><input type="checkbox" checked={Boolean(project.links.backend)} onChange={(e) => updateProjectLinks(idx, 'backend', e.target.checked)} className="accent-blue-500 bg-zinc-800 border-zinc-700 rounded" /> Backend</label>
+                        {/* Project Link URLs Inputs */}
+                        <div className="space-y-2 pt-1">
+                          <span className="text-[10px] text-zinc-400 font-bold block">Project Link URLs</span>
+                          <div className="grid grid-cols-1 gap-2">
+                            <input
+                              type="text"
+                              value={typeof project.links.live === 'string' ? project.links.live : ''}
+                              onChange={(e) => updateProjectLinksUrl(idx, 'live', e.target.value)}
+                              className={inputClass}
+                              placeholder="Live Site URL (https://...)"
+                            />
+                            <input
+                              type="text"
+                              value={typeof project.links.frontend === 'string' ? project.links.frontend : ''}
+                              onChange={(e) => updateProjectLinksUrl(idx, 'frontend', e.target.value)}
+                              className={inputClass}
+                              placeholder="Frontend Repo URL (https://github.com/...)"
+                            />
+                            <input
+                              type="text"
+                              value={typeof project.links.backend === 'string' ? project.links.backend : ''}
+                              onChange={(e) => updateProjectLinksUrl(idx, 'backend', e.target.value)}
+                              className={inputClass}
+                              placeholder="Backend Repo URL (https://github.com/...)"
+                            />
+                          </div>
                         </div>
 
                         <div>
@@ -272,6 +443,14 @@ export default function Home() {
                         </div>
                       </div>
                     ))}
+
+                    {/* Add Project Button */}
+                    <button
+                      onClick={addProject}
+                      className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add New Project
+                    </button>
                   </div>
                 </details>
 
@@ -335,9 +514,9 @@ export default function Home() {
 
         {/* Live Resume Preview Wrapper */}
         <div className="flex-1 py-10 flex justify-center items-start overflow-y-auto print:p-0 print:block">
-          
+
           {/* Strict A4 Paper Container */}
-          <div 
+          <div
             className="w-[210mm] min-h-[297mm] max-h-[297mm] bg-white overflow-hidden shadow-2xl print:shadow-none print:w-auto print:h-auto print:max-h-none print:min-h-0 relative"
           >
             <ResumeDocument ref={printRef} data={resumeData} />
