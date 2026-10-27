@@ -96,6 +96,36 @@ export default function Home() {
     });
   };
 
+  // --- Work Experience Handlers ---
+  const updateExperience = (idx: number, field: string, val: any) => {
+    const newExp = [...resumeData.experience];
+    newExp[idx] = { ...newExp[idx], [field]: val };
+    setResumeData({ ...resumeData, experience: newExp });
+  };
+
+  const addExperience = () => {
+    const newExpItem = {
+      id: `exp-${Date.now()}`,
+      role: "Job Title",
+      company: "Company Name",
+      location: "Location",
+      duration: "Year - Year",
+      bullets: ["Describe key responsibility or achievement."],
+    };
+    setResumeData({
+      ...resumeData,
+      experience: [...resumeData.experience, newExpItem],
+    });
+  };
+
+  const deleteExperience = (idx: number) => {
+    const newExp = resumeData.experience.filter((_, i) => i !== idx);
+    setResumeData({
+      ...resumeData,
+      experience: newExp,
+    });
+  };
+
   const addSkillCategory = () => {
     const newCategories = [
       ...(resumeData.skills.categories || []),
@@ -129,6 +159,30 @@ export default function Home() {
         [sectionKey]: !resumeData.sections[sectionKey]
       }
     });
+  };
+
+  const updateCertification = (idx: number, field: string, val: string) => {
+    const newCerts = [...(resumeData.certifications || [])];
+    newCerts[idx] = { ...newCerts[idx], [field]: val };
+    setResumeData({ ...resumeData, certifications: newCerts });
+  };
+
+  const addCertification = () => {
+    const newCert = {
+      id: `cert-${Date.now()}`,
+      name: "New Certification",
+      issuer: "Issuing Organization",
+      date: "2024",
+    };
+    setResumeData({
+      ...resumeData,
+      certifications: [...(resumeData.certifications || []), newCert],
+    });
+  };
+
+  const deleteCertification = (idx: number) => {
+    const newCerts = (resumeData.certifications || []).filter((_, i) => i !== idx);
+    setResumeData({ ...resumeData, certifications: newCerts });
   };
 
   // Font size step adjuster function for +/- buttons
@@ -166,7 +220,7 @@ export default function Home() {
 
       <main className="min-h-screen bg-zinc-800 flex flex-col xl:flex-row">
         {/* Control Panel - DARK THEME */}
-        <div className="w-full xl:w-125 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950 h-[120vh] print:hidden">
+        <div className="w-full xl:w-125 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950 h-screen sticky top-0 overflow-hidden print:hidden">
 
           {/* Header */}
           <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950">
@@ -379,6 +433,62 @@ export default function Home() {
                   </div>
                 </details>
 
+                {/* Work Experience */}
+                <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
+                  <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
+                    <span className="flex items-center gap-2">
+                      Work Experience
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('experienceTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('experienceTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                  </summary>
+                  <div className="p-4 space-y-6 border-t border-zinc-800 bg-zinc-950">
+                    {(resumeData.experience || []).map((exp, idx) => (
+                      <div key={exp.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-semibold text-zinc-400">Experience #{idx + 1}</span>
+                          <button
+                            onClick={() => deleteExperience(idx)}
+                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" value={exp.role} onChange={(e) => updateExperience(idx, "role", e.target.value)} className={`${inputClass} font-bold text-white`} placeholder="Role Title" />
+                          <input type="text" value={exp.company} onChange={(e) => updateExperience(idx, "company", e.target.value)} className={inputClass} placeholder="Company / Organization" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input type="text" value={exp.location} onChange={(e) => updateExperience(idx, "location", e.target.value)} className={inputClass} placeholder="Location" />
+                          <input type="text" value={exp.duration} onChange={(e) => updateExperience(idx, "duration", e.target.value)} className={inputClass} placeholder="Duration (e.g. 2025 - Present)" />
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] text-zinc-400 font-bold block mb-1">Bullet Points (One per line)</span>
+                          <textarea
+                            value={exp.bullets.join('\n')}
+                            onChange={(e) => updateExperience(idx, "bullets", e.target.value.split('\n'))}
+                            className={`w-full h-24 whitespace-pre-wrap ${inputClass}`}
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add Experience Button */}
+                    <button
+                      onClick={addExperience}
+                      className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add New Experience
+                    </button>
+                  </div>
+                </details>
+
                 {/* Projects */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden" open>
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
@@ -502,36 +612,103 @@ export default function Home() {
                     {resumeData.publications.map((pub, idx) => (
                       <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm grid grid-cols-2 gap-2">
                         <input type="text" value={pub.authors} onChange={(e) => updatePublication(idx, "authors", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Authors (e.g. S. R. Wasi et al.)" />
-                        <input type="text" value={pub.title} onChange={(e) => updatePublication(idx, "title", e.target.value)} className={`${inputClass} col-span-2 font-semibold text-white`} placeholder="Paper Title" />
-                        <input type="text" value={pub.venue} onChange={(e) => updatePublication(idx, "venue", e.target.value)} className={inputClass} placeholder="Venue (e.g. IEOM'25)" />
-                        <input type="text" value={pub.doi} onChange={(e) => updatePublication(idx, "doi", e.target.value)} className={inputClass} placeholder="DOI" />
+                        <input type="text" value={pub.title} onChange={(e) => updatePublication(idx, "title", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Publication Title" />
+                        <input type="text" value={pub.venue} onChange={(e) => updatePublication(idx, "venue", e.target.value)} className={inputClass} placeholder="Venue (e.g. IEEE QPAIN'26)" />
+                        <input type="text" value={pub.doi} onChange={(e) => updatePublication(idx, "doi", e.target.value)} className={inputClass} placeholder="DOI (e.g. 10.1109/...)" />
                       </div>
                     ))}
                   </div>
                 </details>
 
-                {/* Master Reset */}
-                <div className="pt-4 pb-2">
-                  <button onClick={() => setResumeData(masterResume)} className="w-full py-3 text-xs text-red-400 font-semibold bg-red-950/30 hover:bg-red-900/50 rounded-lg border border-red-900/50 transition">
-                    Reset Everything to Master File
-                  </button>
-                </div>
+                {/* Certifications & Specialized Training Accordion */}
+                <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
+                  <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
+                    <span className="flex items-center gap-2">
+                      Certifications
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('certificationTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('certificationTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                  </summary>
+                  <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
+
+                    {/* Custom Title Selector */}
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase">Section Title</span>
+                      <select
+                        value={resumeData.styles.certificationsTitle || "Certifications & Training"}
+                        onChange={(e) => setResumeData({
+                          ...resumeData,
+                          styles: { ...resumeData.styles, certificationsTitle: e.target.value }
+                        })}
+                        className="p-1 text-[11px] bg-zinc-900 border border-zinc-700 text-zinc-100 rounded focus:outline-none"
+                      >
+                        <option value="Certifications & Training">Certifications & Training</option>
+                        <option value="Certifications & Licenses">Certifications & Licenses</option>
+                        <option value="Certifications">Certifications</option>
+                        <option value="Professional Training">Professional Training</option>
+                      </select>
+                    </div>
+
+                    {(resumeData.certifications || []).map((cert, idx) => (
+                      <div key={cert.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-semibold text-zinc-400">Item #{idx + 1}</span>
+                          <button
+                            onClick={() => deleteCertification(idx)}
+                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+
+                        <input
+                          type="text"
+                          value={cert.name}
+                          onChange={(e) => updateCertification(idx, "name", e.target.value)}
+                          className={`w-full ${inputClass} font-bold text-white`}
+                          placeholder="Certification Name / Course Title"
+                        />
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={cert.issuer}
+                            onChange={(e) => updateCertification(idx, "issuer", e.target.value)}
+                            className={inputClass}
+                            placeholder="Issuing Organization"
+                          />
+                          <input
+                            type="text"
+                            value={cert.date}
+                            onChange={(e) => updateCertification(idx, "date", e.target.value)}
+                            className={inputClass}
+                            placeholder="Year / Date"
+                          />
+                        </div>
+                      </div>
+                    ))}
+
+                    <button
+                      onClick={addCertification}
+                      className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Certification
+                    </button>
+                  </div>
+                </details>
 
               </div>
             )}
           </div>
         </div>
 
-        {/* Live Resume Preview Wrapper */}
-        <div className="flex-1 py-10 flex justify-center items-start overflow-y-auto print:p-0 print:block">
-
-          {/* Strict A4 Paper Container */}
-          <div
-            className="w-[210mm] min-h-[297mm] max-h-[297mm] bg-white overflow-hidden shadow-2xl print:shadow-none print:w-auto print:h-auto print:max-h-none print:min-h-0 relative"
-          >
-            <ResumeDocument ref={printRef} data={resumeData} />
-          </div>
-
+        {/* Live A4 Preview Panel */}
+        <div className="flex-1 bg-zinc-800 flex items-start justify-center p-6 xl:p-12 overflow-hidden">
+          <ResumeDocument ref={printRef} data={resumeData} />
         </div>
       </main>
     </>

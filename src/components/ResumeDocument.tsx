@@ -2,10 +2,9 @@
 
 import React, { forwardRef } from "react";
 import { MasterResumeData } from "@/src/data/masterResume";
-import { Phone, MapPin, Mail, Globe } from "lucide-react";
-import { AppWindow, Server } from "lucide-react";
+import { Phone, MapPin, Mail, Globe, AppWindow, Server } from "lucide-react";
 
-// --- Custom SVG Icons to replace the missing Lucide brand icons ---
+// --- Custom SVG Icons for GitHub and LinkedIn ---
 const GithubIcon = ({ size = 11 }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
@@ -20,7 +19,7 @@ const LinkedinIcon = ({ size = 11 }) => (
     <circle cx="4" cy="4" r="2" />
   </svg>
 );
-// ----------------------------------------------------------------
+// --------------------------------------------------
 
 interface ResumeDocumentProps {
   data: MasterResumeData;
@@ -34,7 +33,7 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
     return (
       <div
         ref={ref}
-        className={`w-[210mm] min-h-[297mm] overflow-hidden bg-white text-gray-900 p-15 shadow-md print:shadow-none print:w-[210mm] print:min-h-[297mm] ${s.fontFamily} leading-snug`}
+        className={`w-[210mm] h-[297mm] overflow-hidden bg-white text-gray-900 p-15 shadow-md print:shadow-none print:w-[210mm] print:min-h-[297mm] ${s.fontFamily} leading-snug`}
         style={{ boxSizing: "border-box" }}
       >
         {/* Header */}
@@ -64,40 +63,38 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
         )}
 
         {/* SKILLS SECTION */}
-        {data.sections.skills && (
+        {sec?.skills && (
           <div className="mb-4">
-            <h2 className={`font-bold uppercase tracking-wider mb-1 ${data.styles.sectionTitleSize} ${data.styles.sectionTitleBg} px-2 py-0.5`}>
+            <h2 className={`font-bold uppercase tracking-wider mb-1.5 ${s.sectionTitleSize} ${s.sectionTitleBg} px-2 py-0.5`}>
               Skills
             </h2>
 
-            {(data.styles.skillsLayout || "tier") === "tier" ? (
-              /* Existing Tiered View */
-              <div className={`space-y-1 ${data.styles.skillsTextSize}`}>
+            {(s.skillsLayout || "tier") === "tier" ? (
+              <div className={`px-2 space-y-1 ${s.skillsTextSize}`}>
                 {data.skills.expertise && data.skills.expertise.length > 0 && (
-                  <div className="flex">
-                    <span className="font-bold w-28 shrink-0">Expertise</span>
-                    <span className="text-zinc-700">• {data.skills.expertise.join(" • ")}</span>
+                  <div>
+                    <span className="font-bold">Expertise: </span>
+                    <span className="text-zinc-700">{data.skills.expertise.join(" • ")}</span>
                   </div>
                 )}
                 {data.skills.comfortable && data.skills.comfortable.length > 0 && (
-                  <div className="flex">
-                    <span className="font-bold w-28 shrink-0">Comfortable</span>
-                    <span className="text-zinc-700">• {data.skills.comfortable.join(" • ")}</span>
+                  <div>
+                    <span className="font-bold">Comfortable: </span>
+                    <span className="text-zinc-700">{data.skills.comfortable.join(" • ")}</span>
                   </div>
                 )}
                 {data.skills.familiar && data.skills.familiar.length > 0 && (
-                  <div className="flex">
-                    <span className="font-bold w-28 shrink-0">Familiar</span>
-                    <span className="text-zinc-700">• {data.skills.familiar.join(" • ")}</span>
+                  <div>
+                    <span className="font-bold">Familiar: </span>
+                    <span className="text-zinc-700">{data.skills.familiar.join(" • ")}</span>
                   </div>
                 )}
               </div>
             ) : (
-              /* New Categorized View */
-              <div className={`space-y-1 ${data.styles.skillsTextSize}`}>
+              <div className={`px-2 space-y-1 ${s.skillsTextSize}`}>
                 {data.skills.categories?.map((cat, idx) => (
-                  <div key={idx} className="flex">
-                    <span className="font-bold w-36 shrink-0">{cat.label}:</span>
+                  <div key={idx}>
+                    <span className="font-bold">{cat.label}: </span>
                     <span className="text-zinc-700">{cat.items.join(", ")}</span>
                   </div>
                 ))}
@@ -106,23 +103,44 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
           </div>
         )}
 
+        {/* EXPERIENCE SECTION */}
+        {sec?.experience && data.experience && data.experience.length > 0 && (
+          <section className="mb-4">
+            <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-2`}>
+              Work Experience
+            </h2>
+            <div className={`px-2 space-y-3 ${s.experienceTextSize || "text-[11px]"}`}>
+              {data.experience.map((exp) => (
+                <div key={exp.id}>
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="font-bold text-[12px] text-gray-900">
+                      {exp.role} <span className="font-normal text-gray-700">| {exp.company}</span>
+                    </span>
+                    <span className="text-[11px] text-gray-700 font-medium">{exp.duration}</span>
+                  </div>
+                  <ul className="list-disc list-outside ml-3 text-gray-800 space-y-1 leading-relaxed mt-1">
+                    {exp.bullets.map((b, idx) => (
+                      <li key={idx} className="pl-1">{b}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Projects */}
         {sec?.projects && (
-          <section className="mb-5">
+          <section className="mb-4">
             <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-2`}>
               Projects
             </h2>
             <div className={`px-2 space-y-4 ${s.projectTextSize}`}>
               {data.allProjects.map((project) => (
                 <div key={project.id}>
-
-                  {/* Top Row: Title & Icons on the left, Subtitle on the right */}
                   <div className="flex justify-between items-center mb-1">
-
-                    {/* Left Group: Title + Link Icons */}
                     <div className="flex items-center gap-3">
                       <span className={`${s.projectTitleBold ? "font-bold" : "font-normal"} text-gray-900 text-[13px]`}>{project.title}</span>
-
                       <div className="flex items-center gap-2.5 text-[10px] font-semibold">
                         <a
                           href={typeof project.links.live === "string" && project.links.live ? project.links.live : undefined}
@@ -151,11 +169,9 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
                       </div>
                     </div>
 
-                    {/* Right Group: Subtitle */}
                     <span className="text-gray-700 italic text-[11px] whitespace-nowrap ml-4">
                       {project.subtitle}
                     </span>
-
                   </div>
 
                   <ul className="list-disc list-outside ml-3 text-gray-800 space-y-1 leading-relaxed mt-1">
@@ -206,6 +222,30 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
             </ul>
           </section>
         )}
+
+        {/* Certifications & Training */}
+        {sec?.certifications && data.certifications && data.certifications.length > 0 && (
+          <section className="mb-3">
+            <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1.5`}>
+              {s.certificationsTitle || "Certifications & Training"}
+            </h2>
+            <div className={`px-2 space-y-1 ${s.certificationTextSize || "text-[11px]"}`}>
+              {data.certifications.map((cert) => (
+                <div key={cert.id} className="flex justify-between items-start">
+                  <div>
+                    <span className="font-bold text-gray-900">{cert.name}</span>
+                    <span className="text-gray-700"> — {cert.issuer}</span>
+                    {cert.credentialId && (
+                      <span className="text-gray-500 text-[10px] ml-1.5">(ID: {cert.credentialId})</span>
+                    )}
+                  </div>
+                  <span className="font-medium text-gray-700 shrink-0 ml-2">{cert.date}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
       </div>
     );
   }

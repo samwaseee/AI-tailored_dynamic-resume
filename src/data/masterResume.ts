@@ -7,6 +7,15 @@ export interface Project {
   technologies?: string;
 }
 
+export interface ExperienceItem {
+  id: string;
+  role: string;
+  company: string;
+  location: string;
+  duration: string;
+  bullets: string[];
+}
+
 export interface Publication {
   authors: string;
   title: string;
@@ -14,12 +23,23 @@ export interface Publication {
   doi: string;
 }
 
+export interface CertificationItem {
+  id: string;
+  name: string;
+  issuer: string;
+  date: string;
+  credentialId?: string;
+  url?: string;
+}
+
 export interface ResumeSectionsVisibility {
   profile: boolean;
   skills: boolean;
+  experience: boolean;
   projects: boolean;
   education: boolean;
   publications: boolean;
+  certifications: boolean;
 }
 
 export interface ResumeStyles {
@@ -36,9 +56,12 @@ export interface ResumeStyles {
   // Body text sizes
   summaryTextSize: string;
   skillsTextSize: string;
+  experienceTextSize: string;
   projectTextSize: string;
   educationTextSize: string;
   publicationTextSize: string;
+  certificationsTitle: string;
+  certificationTextSize: string;
 
   projectTitleBold: boolean;
   educationTitleBold: boolean;
@@ -62,6 +85,7 @@ export interface MasterResumeData {
     familiar: string[];
     categories?: { label: string; items: string[] }[];
   };
+  experience: ExperienceItem[];
   allProjects: Project[];
   education: {
     degree: string;
@@ -70,6 +94,7 @@ export interface MasterResumeData {
     duration: string;
   };
   publications: Publication[];
+  certifications?: CertificationItem[];
   sections: ResumeSectionsVisibility;
   styles: ResumeStyles;
 }
@@ -151,6 +176,19 @@ export const masterResume: MasterResumeData = {
       },
     ],
   },
+  experience: [
+    {
+      id: "iiuc-des",
+      role: "Technical Lead & Event Coordinator",
+      company: "IIUC Developers & Entrepreneurs Society",
+      location: "Chittagong, Bangladesh",
+      duration: "2025 - Present",
+      bullets: [
+        "Directed technical workshops, development bootcamps, and led organizational logistics for university datathons at the IIUC AI Lab.",
+        "Mentored student teams in full-stack architecture, Git collaboration workflows, and competitive programming practices.",
+      ],
+    },
+  ],
   allProjects: [
     {
       id: "starlight-university",
@@ -231,12 +269,22 @@ export const masterResume: MasterResumeData = {
       doi: "10.1109/QPAIN69676.2026.11545987",
     },
   ],
+  certifications: [
+    {
+      id: "cert-1",
+      name: "Mobile Application Development",
+      issuer: "EDGE Bangladesh",
+      date: "2024",
+    },
+  ],
   sections: {
     profile: true,
     skills: true,
+    experience: true,
     projects: true,
     education: true,
     publications: true,
+    certifications: false,
   },
   styles: {
     fontFamily: "font-sans",
@@ -248,6 +296,9 @@ export const masterResume: MasterResumeData = {
     skillsLayout: "tier",
     summaryTextSize: "text-[11px]",
     skillsTextSize: "text-[11px]",
+    experienceTextSize: "text-[11px]",
+    certificationsTitle: "Certifications & Training",
+    certificationTextSize: "text-[11px]",
     projectTextSize: "text-[11px]",
     educationTextSize: "text-[11px]",
     publicationTextSize: "text-[11px]",
