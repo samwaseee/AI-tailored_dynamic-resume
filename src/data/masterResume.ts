@@ -32,6 +32,23 @@ export interface CertificationItem {
   url?: string;
 }
 
+export interface AchievementItem {
+  id: string;
+  title: string;
+  details: string;
+  link?: string;
+}
+
+export type SectionKey =
+  | "profile"
+  | "skills"
+  | "experience"
+  | "projects"
+  | "education"
+  | "publications"
+  | "certifications"
+  | "achievements";
+
 export interface ResumeSectionsVisibility {
   profile: boolean;
   skills: boolean;
@@ -40,6 +57,7 @@ export interface ResumeSectionsVisibility {
   education: boolean;
   publications: boolean;
   certifications: boolean;
+  achievements: boolean;
 }
 
 export interface ResumeStyles {
@@ -53,6 +71,9 @@ export interface ResumeStyles {
 
   skillsLayout: "tier" | "category";
 
+  certificationsTitle: string;
+  achievementsTitle: string;
+
   // Body text sizes
   summaryTextSize: string;
   skillsTextSize: string;
@@ -60,8 +81,8 @@ export interface ResumeStyles {
   projectTextSize: string;
   educationTextSize: string;
   publicationTextSize: string;
-  certificationsTitle: string;
   certificationTextSize: string;
+  achievementTextSize: string;
 
   projectTitleBold: boolean;
   educationTitleBold: boolean;
@@ -95,6 +116,8 @@ export interface MasterResumeData {
   };
   publications: Publication[];
   certifications?: CertificationItem[];
+  achievements?: AchievementItem[];
+  sectionOrder: SectionKey[];
   sections: ResumeSectionsVisibility;
   styles: ResumeStyles;
 }
@@ -102,7 +125,7 @@ export interface MasterResumeData {
 export const masterResume: MasterResumeData = {
   personalInfo: {
     name: "Samiur Rahman Wasi",
-    title: "Web Developer",
+    title: "Web Developer & AI Developer",
     phone: "+880-18811-46425",
     location: "4224, Chittagong, Bangladesh",
     email: "samwaseee@gmail.com",
@@ -184,7 +207,7 @@ export const masterResume: MasterResumeData = {
       location: "Chittagong, Bangladesh",
       duration: "2025 - Present",
       bullets: [
-        "Directed technical workshops, development bootcamps, and led organizational logistics for university datathons at the IIUC AI Lab.",
+        "Directed technical workshops, development bootcamps, and led organizational logistics for university datathons.",
         "Mentored student teams in full-stack architecture, Git collaboration workflows, and competitive programming practices.",
       ],
     },
@@ -221,7 +244,7 @@ export const masterResume: MasterResumeData = {
         "Role-based dashboards (Freelancer, Client, Admin) for gig tracking and profile management via Next.js.",
         "Secured protected routes and backend communication using NextAuth and JWT-backed Axios interceptors.",
         "Integrated AI pitch generators, interactive chats, and Recharts analytics with Zod-validated forms.",
-        "Streamlined full-stack integration by generating a comprehensive OpenAPI specification for backend REST routes",
+        "Streamlined full-stack integration by generating a comprehensive OpenAPI specification for backend REST routes.",
       ],
     },
     {
@@ -277,6 +300,28 @@ export const masterResume: MasterResumeData = {
       date: "2024",
     },
   ],
+  achievements: [
+    {
+      id: "ach-1",
+      title: "Competitive Programming",
+      details: "Solved 200+ algorithmic problems across platforms including LeetCode, Codeforces, and CodeChef.",
+    },
+    {
+      id: "ach-2",
+      title: "Datathons & Hackathons",
+      details: "Organized and participated in technical machine learning competitions and datathons at IIUC.",
+    },
+  ],
+  sectionOrder: [
+    "profile",
+    "skills",
+    "experience",
+    "projects",
+    "education",
+    "publications",
+    "certifications",
+    "achievements",
+  ],
   sections: {
     profile: true,
     skills: true,
@@ -285,6 +330,7 @@ export const masterResume: MasterResumeData = {
     education: true,
     publications: true,
     certifications: false,
+    achievements: false,
   },
   styles: {
     fontFamily: "font-sans",
@@ -294,14 +340,16 @@ export const masterResume: MasterResumeData = {
     sectionTitleBold: true,
     sectionTitleBg: "bg-gray-200",
     skillsLayout: "tier",
-    summaryTextSize: "text-[11px]",
-    skillsTextSize: "text-[11px]",
-    experienceTextSize: "text-[11px]",
     certificationsTitle: "Certifications & Training",
-    certificationTextSize: "text-[11px]",
-    projectTextSize: "text-[11px]",
-    educationTextSize: "text-[11px]",
-    publicationTextSize: "text-[11px]",
+    achievementsTitle: "Competitive Programming & Open Source",
+    summaryTextSize: "text-[12px]",
+    skillsTextSize: "text-[12px]",
+    experienceTextSize: "text-[12px]",
+    projectTextSize: "text-[12px]",
+    educationTextSize: "text-[12px]",
+    publicationTextSize: "text-[12px]",
+    certificationTextSize: "text-[12px]",
+    achievementTextSize: "text-[12px]",
     projectTitleBold: true,
     educationTitleBold: true,
   },

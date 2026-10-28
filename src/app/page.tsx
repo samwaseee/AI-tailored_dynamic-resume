@@ -1,9 +1,22 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { masterResume, MasterResumeData } from "@/src/data/masterResume";
+import { masterResume, MasterResumeData, SectionKey } from "@/src/data/masterResume";
 import { ResumeDocument } from "@/src/components/ResumeDocument";
-import { Sparkles, Printer, Loader2, Edit3, Wand2, ChevronDown, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
+import { 
+  Sparkles, 
+  Printer, 
+  Loader2, 
+  Edit3, 
+  Wand2, 
+  ChevronDown, 
+  Eye, 
+  EyeOff, 
+  Plus, 
+  Trash2, 
+  ArrowUp, 
+  ArrowDown 
+} from "lucide-react";
 
 export default function Home() {
   const [jobDescription, setJobDescription] = useState("");
@@ -61,6 +74,33 @@ export default function Home() {
     }
   };
 
+  const moveSection = (index: number, direction: "up" | "down") => {
+    const defaultOrder: SectionKey[] = [
+      "profile",
+      "skills",
+      "experience",
+      "projects",
+      "education",
+      "publications",
+      "certifications",
+      "achievements",
+    ];
+
+    const currentOrder = resumeData.sectionOrder || defaultOrder;
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+
+    if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
+
+    const newOrder = [...currentOrder];
+    const [movedItem] = newOrder.splice(index, 1);
+    newOrder.splice(targetIndex, 0, movedItem);
+
+    setResumeData({
+      ...resumeData,
+      sectionOrder: newOrder,
+    });
+  };
+
   const updateProject = (idx: number, field: string, val: any) => {
     const newProjects = [...resumeData.allProjects];
     newProjects[idx] = { ...newProjects[idx], [field]: val };
@@ -96,9 +136,8 @@ export default function Home() {
     });
   };
 
-  // --- Work Experience Handlers ---
   const updateExperience = (idx: number, field: string, val: any) => {
-    const newExp = [...resumeData.experience];
+    const newExp = [...(resumeData.experience || [])];
     newExp[idx] = { ...newExp[idx], [field]: val };
     setResumeData({ ...resumeData, experience: newExp });
   };
@@ -114,16 +153,63 @@ export default function Home() {
     };
     setResumeData({
       ...resumeData,
-      experience: [...resumeData.experience, newExpItem],
+      experience: [...(resumeData.experience || []), newExpItem],
     });
   };
 
   const deleteExperience = (idx: number) => {
-    const newExp = resumeData.experience.filter((_, i) => i !== idx);
+    const newExp = (resumeData.experience || []).filter((_, i) => i !== idx);
     setResumeData({
       ...resumeData,
       experience: newExp,
     });
+  };
+
+  const updateCertification = (idx: number, field: string, val: string) => {
+    const newCerts = [...(resumeData.certifications || [])];
+    newCerts[idx] = { ...newCerts[idx], [field]: val };
+    setResumeData({ ...resumeData, certifications: newCerts });
+  };
+
+  const addCertification = () => {
+    const newCert = {
+      id: `cert-${Date.now()}`,
+      name: "New Certification",
+      issuer: "Issuing Organization",
+      date: "2024",
+    };
+    setResumeData({
+      ...resumeData,
+      certifications: [...(resumeData.certifications || []), newCert],
+    });
+  };
+
+  const deleteCertification = (idx: number) => {
+    const newCerts = (resumeData.certifications || []).filter((_, i) => i !== idx);
+    setResumeData({ ...resumeData, certifications: newCerts });
+  };
+
+  const updateAchievement = (idx: number, field: string, val: string) => {
+    const newAch = [...(resumeData.achievements || [])];
+    newAch[idx] = { ...newAch[idx], [field]: val };
+    setResumeData({ ...resumeData, achievements: newAch });
+  };
+
+  const addAchievement = () => {
+    const newAch = {
+      id: `ach-${Date.now()}`,
+      title: "Achievement Title / Platform",
+      details: "Describe competition rank, rating, or open-source contribution details.",
+    };
+    setResumeData({
+      ...resumeData,
+      achievements: [...(resumeData.achievements || []), newAch],
+    });
+  };
+
+  const deleteAchievement = (idx: number) => {
+    const newAch = (resumeData.achievements || []).filter((_, i) => i !== idx);
+    setResumeData({ ...resumeData, achievements: newAch });
   };
 
   const addSkillCategory = () => {
@@ -161,37 +247,12 @@ export default function Home() {
     });
   };
 
-  const updateCertification = (idx: number, field: string, val: string) => {
-    const newCerts = [...(resumeData.certifications || [])];
-    newCerts[idx] = { ...newCerts[idx], [field]: val };
-    setResumeData({ ...resumeData, certifications: newCerts });
-  };
-
-  const addCertification = () => {
-    const newCert = {
-      id: `cert-${Date.now()}`,
-      name: "New Certification",
-      issuer: "Issuing Organization",
-      date: "2024",
-    };
-    setResumeData({
-      ...resumeData,
-      certifications: [...(resumeData.certifications || []), newCert],
-    });
-  };
-
-  const deleteCertification = (idx: number) => {
-    const newCerts = (resumeData.certifications || []).filter((_, i) => i !== idx);
-    setResumeData({ ...resumeData, certifications: newCerts });
-  };
-
-  // Font size step adjuster function for +/- buttons
   const adjustSize = (key: keyof MasterResumeData['styles'], direction: 'inc' | 'dec', e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevents details accordion from toggling when clicking + / -
+    e.stopPropagation();
     const sizes = ["text-[9px]", "text-[10px]", "text-[11px]", "text-xs", "text-sm", "text-base"];
     const current = resumeData.styles[key] as string;
     let idx = sizes.indexOf(current);
-    if (idx === -1) idx = 2; // default fallback
+    if (idx === -1) idx = 2;
 
     if (direction === 'inc' && idx < sizes.length - 1) idx++;
     if (direction === 'dec' && idx > 0) idx--;
@@ -202,15 +263,17 @@ export default function Home() {
     });
   };
 
-  // Base classes for inputs to keep things dry
   const inputClass = "p-2 text-xs border border-zinc-700 bg-zinc-900 text-zinc-100 rounded focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-zinc-500";
 
   return (
     <>
       <style>{`
         @media print {
-          @page { size: A4; margin: 0; }
-          body { 
+          @page { size: A4 portrait; margin: 0; }
+          html, body { 
+            width: 210mm;
+            height: 297mm;
+            overflow: hidden;
             -webkit-print-color-adjust: exact !important; 
             print-color-adjust: exact !important; 
             background: white !important;
@@ -219,7 +282,7 @@ export default function Home() {
       `}</style>
 
       <main className="min-h-screen bg-zinc-800 flex flex-col xl:flex-row">
-        {/* Control Panel - DARK THEME */}
+        {/* Control Panel */}
         <div className="w-full xl:w-125 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950 h-screen sticky top-0 overflow-hidden print:hidden">
 
           {/* Header */}
@@ -249,7 +312,7 @@ export default function Home() {
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
                   placeholder="Paste Job Description..."
-                  className={`w-full min-h-[300px] font-mono leading-relaxed resize-y ${inputClass}`}
+                  className={`w-full min-h-75 font-mono leading-relaxed resize-y ${inputClass}`}
                 />
                 <button
                   onClick={handleTailor}
@@ -278,23 +341,61 @@ export default function Home() {
                   </select>
                 </div>
 
-                {/* Section Visibility Switches Panel */}
+                {/* Dynamic Section Layout & Ordering Panel */}
                 <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-lg space-y-2">
-                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider block">Section Visibility Switches</span>
-                  <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-                    {Object.entries(resumeData.sections).map(([key, isVisible]) => (
-                      <button
-                        key={key}
-                        onClick={() => toggleSection(key as keyof MasterResumeData['sections'])}
-                        className={`flex items-center justify-between p-2 rounded border transition ${isVisible
-                          ? 'bg-blue-950/40 border-blue-600/50 text-blue-300'
-                          : 'bg-zinc-950 border-zinc-800 text-zinc-500 line-through'
+                  <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider block">
+                    Section Layout & Order
+                  </span>
+                  <div className="space-y-1.5 pt-1 text-xs">
+                    {(resumeData.sectionOrder || [
+                      "profile",
+                      "skills",
+                      "experience",
+                      "projects",
+                      "education",
+                      "publications",
+                      "certifications",
+                      "achievements",
+                    ]).map((key, index) => {
+                      const isVisible = resumeData.sections[key];
+                      return (
+                        <div
+                          key={key}
+                          className={`flex items-center justify-between p-2 rounded border transition ${
+                            isVisible
+                              ? "bg-blue-950/40 border-blue-600/50 text-blue-300"
+                              : "bg-zinc-950 border-zinc-800 text-zinc-500 line-through"
                           }`}
-                      >
-                        <span className="capitalize">{key}</span>
-                        {isVisible ? <Eye size={14} className="text-blue-400" /> : <EyeOff size={14} className="text-zinc-600" />}
-                      </button>
-                    ))}
+                        >
+                          <button
+                            onClick={() => toggleSection(key)}
+                            className="flex items-center gap-1.5 capitalize font-medium hover:text-white"
+                          >
+                            {isVisible ? <Eye size={14} className="text-blue-400" /> : <EyeOff size={14} className="text-zinc-600" />}
+                            {key}
+                          </button>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              disabled={index === 0}
+                              onClick={() => moveSection(index, "up")}
+                              className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300"
+                              title="Move Up"
+                            >
+                              <ArrowUp size={13} />
+                            </button>
+                            <button
+                              disabled={index === (resumeData.sectionOrder?.length || 8) - 1}
+                              onClick={() => moveSection(index, "down")}
+                              className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300"
+                              title="Move Down"
+                            >
+                              <ArrowDown size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -348,8 +449,6 @@ export default function Home() {
                     <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
-
-                    {/* Layout Selector Toggle */}
                     <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
                       <span className="text-[10px] text-zinc-400 font-bold uppercase">Display Format</span>
                       <select
@@ -404,7 +503,7 @@ export default function Home() {
                                   setResumeData({ ...resumeData, skills: { ...resumeData.skills, categories: newCats } });
                                 }}
                                 className={`w-full font-bold ${inputClass}`}
-                                placeholder="Category Name (e.g. Languages)"
+                                placeholder="Category Name"
                               />
                               <input
                                 type="text"
@@ -421,7 +520,6 @@ export default function Home() {
                           </div>
                         ))}
 
-                        {/* Add Category Button */}
                         <button
                           onClick={addSkillCategory}
                           className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
@@ -479,7 +577,6 @@ export default function Home() {
                       </div>
                     ))}
 
-                    {/* Add Experience Button */}
                     <button
                       onClick={addExperience}
                       className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
@@ -520,7 +617,6 @@ export default function Home() {
                           <input type="text" value={project.subtitle} onChange={(e) => updateProject(idx, "subtitle", e.target.value)} className={inputClass} placeholder="Subtitle" />
                         </div>
 
-                        {/* Project Link URLs Inputs */}
                         <div className="space-y-2 pt-1">
                           <span className="text-[10px] text-zinc-400 font-bold block">Project Link URLs</span>
                           <div className="grid grid-cols-1 gap-2">
@@ -529,21 +625,21 @@ export default function Home() {
                               value={typeof project.links.live === 'string' ? project.links.live : ''}
                               onChange={(e) => updateProjectLinksUrl(idx, 'live', e.target.value)}
                               className={inputClass}
-                              placeholder="Live Site URL (https://...)"
+                              placeholder="Live Site URL"
                             />
                             <input
                               type="text"
                               value={typeof project.links.frontend === 'string' ? project.links.frontend : ''}
                               onChange={(e) => updateProjectLinksUrl(idx, 'frontend', e.target.value)}
                               className={inputClass}
-                              placeholder="Frontend Repo URL (https://github.com/...)"
+                              placeholder="Frontend Repo URL"
                             />
                             <input
                               type="text"
                               value={typeof project.links.backend === 'string' ? project.links.backend : ''}
                               onChange={(e) => updateProjectLinksUrl(idx, 'backend', e.target.value)}
                               className={inputClass}
-                              placeholder="Backend Repo URL (https://github.com/...)"
+                              placeholder="Backend Repo URL"
                             />
                           </div>
                         </div>
@@ -564,7 +660,6 @@ export default function Home() {
                       </div>
                     ))}
 
-                    {/* Add Project Button */}
                     <button
                       onClick={addProject}
                       className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
@@ -611,16 +706,16 @@ export default function Home() {
                   <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
                     {resumeData.publications.map((pub, idx) => (
                       <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm grid grid-cols-2 gap-2">
-                        <input type="text" value={pub.authors} onChange={(e) => updatePublication(idx, "authors", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Authors (e.g. S. R. Wasi et al.)" />
-                        <input type="text" value={pub.title} onChange={(e) => updatePublication(idx, "title", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Publication Title" />
-                        <input type="text" value={pub.venue} onChange={(e) => updatePublication(idx, "venue", e.target.value)} className={inputClass} placeholder="Venue (e.g. IEEE QPAIN'26)" />
-                        <input type="text" value={pub.doi} onChange={(e) => updatePublication(idx, "doi", e.target.value)} className={inputClass} placeholder="DOI (e.g. 10.1109/...)" />
+                        <input type="text" value={pub.authors} onChange={(e) => updatePublication(idx, "authors", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Authors" />
+                        <input type="text" value={pub.title} onChange={(e) => updatePublication(idx, "title", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Title" />
+                        <input type="text" value={pub.venue} onChange={(e) => updatePublication(idx, "venue", e.target.value)} className={inputClass} placeholder="Venue" />
+                        <input type="text" value={pub.doi} onChange={(e) => updatePublication(idx, "doi", e.target.value)} className={inputClass} placeholder="DOI" />
                       </div>
                     ))}
                   </div>
                 </details>
 
-                {/* Certifications & Specialized Training Accordion */}
+                {/* Certifications */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
                     <span className="flex items-center gap-2">
@@ -634,8 +729,6 @@ export default function Home() {
                     <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
                   <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
-
-                    {/* Custom Title Selector */}
                     <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
                       <span className="text-[10px] text-zinc-400 font-bold uppercase">Section Title</span>
                       <select
@@ -665,29 +758,10 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <input
-                          type="text"
-                          value={cert.name}
-                          onChange={(e) => updateCertification(idx, "name", e.target.value)}
-                          className={`w-full ${inputClass} font-bold text-white`}
-                          placeholder="Certification Name / Course Title"
-                        />
-
+                        <input type="text" value={cert.name} onChange={(e) => updateCertification(idx, "name", e.target.value)} className={`w-full ${inputClass} font-bold text-white`} placeholder="Certification Name" />
                         <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="text"
-                            value={cert.issuer}
-                            onChange={(e) => updateCertification(idx, "issuer", e.target.value)}
-                            className={inputClass}
-                            placeholder="Issuing Organization"
-                          />
-                          <input
-                            type="text"
-                            value={cert.date}
-                            onChange={(e) => updateCertification(idx, "date", e.target.value)}
-                            className={inputClass}
-                            placeholder="Year / Date"
-                          />
+                          <input type="text" value={cert.issuer} onChange={(e) => updateCertification(idx, "issuer", e.target.value)} className={inputClass} placeholder="Issuer" />
+                          <input type="text" value={cert.date} onChange={(e) => updateCertification(idx, "date", e.target.value)} className={inputClass} placeholder="Date" />
                         </div>
                       </div>
                     ))}
@@ -701,13 +775,70 @@ export default function Home() {
                   </div>
                 </details>
 
+                {/* Achievements */}
+                <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
+                  <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
+                    <span className="flex items-center gap-2">
+                      Achievements & Open Source
+                      <span className="flex items-center bg-zinc-800 border border-zinc-700 rounded overflow-hidden">
+                        <button onClick={(e) => adjustSize('achievementTextSize', 'dec', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">-</button>
+                        <span className="px-1 text-[9px] text-zinc-400">Size</span>
+                        <button onClick={(e) => adjustSize('achievementTextSize', 'inc', e)} className="px-1.5 py-0.5 hover:bg-zinc-700 text-zinc-300 text-[10px]">+</button>
+                      </span>
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
+                  </summary>
+                  <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
+                    <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase">Section Title</span>
+                      <select
+                        value={resumeData.styles.achievementsTitle || "Competitive Programming & Open Source"}
+                        onChange={(e) => setResumeData({
+                          ...resumeData,
+                          styles: { ...resumeData.styles, achievementsTitle: e.target.value }
+                        })}
+                        className="p-1 text-[11px] bg-zinc-900 border border-zinc-700 text-zinc-100 rounded focus:outline-none"
+                      >
+                        <option value="Competitive Programming & Open Source">Competitive Programming & Open Source</option>
+                        <option value="Competitions & Achievements">Competitions & Achievements</option>
+                        <option value="Honors & Achievements">Honors & Achievements</option>
+                        <option value="Open Source Contributions">Open Source Contributions</option>
+                      </select>
+                    </div>
+
+                    {(resumeData.achievements || []).map((item, idx) => (
+                      <div key={item.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-semibold text-zinc-400">Item #{idx + 1}</span>
+                          <button
+                            onClick={() => deleteAchievement(idx)}
+                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+
+                        <input type="text" value={item.title} onChange={(e) => updateAchievement(idx, "title", e.target.value)} className={`w-full ${inputClass} font-bold text-white`} placeholder="Title" />
+                        <textarea value={item.details} onChange={(e) => updateAchievement(idx, "details", e.target.value)} className={`w-full h-16 ${inputClass}`} placeholder="Details" />
+                      </div>
+                    ))}
+
+                    <button
+                      onClick={addAchievement}
+                      className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Achievement
+                    </button>
+                  </div>
+                </details>
+
               </div>
             )}
           </div>
         </div>
 
         {/* Live A4 Preview Panel */}
-        <div className="flex-1 bg-zinc-800 flex items-start justify-center p-6 xl:p-12 overflow-hidden">
+        <div className="flex-1 bg-zinc-800 flex items-start justify-center p-6 xl:p-12 overflow-auto">
           <ResumeDocument ref={printRef} data={resumeData} />
         </div>
       </main>
