@@ -3,6 +3,8 @@ export interface Project {
   title: string;
   subtitle: string;
   links: { live: string; frontend: string; backend: string };
+  inputMode?: "list" | "paragraph";
+  description?: string;
   bullets: string[];
   technologies?: string;
 }

@@ -127,6 +127,7 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
               <div className={`px-2 space-y-2.5 ${s.projectTextSize}`}>
                 {data.allProjects.map((project) => (
                   <div key={project.id}>
+                    {/* Header & Links */}
                     <div className="flex justify-between items-center mb-0.5">
                       <div className="flex items-center gap-3">
                         <span className={`${s.projectTitleBold ? "font-bold" : "font-normal"} text-gray-900 text-[12px]`}>{project.title}</span>
@@ -163,11 +164,19 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
                       </span>
                     </div>
 
-                    <ul className="list-disc list-outside ml-3 text-gray-800 space-y-0.5 leading-relaxed mt-0.5">
-                      {project.bullets.map((b, idx) => (
-                        <li key={idx} className="pl-1">{b}</li>
-                      ))}
-                    </ul>
+                    {/* Dual Mode Description: Paragraph vs List */}
+                    {project.inputMode === "paragraph" ? (
+                      <p className="text-gray-800 leading-relaxed mt-0.5 text-justify">
+                        {project.description || project.bullets.join(" ")}
+                      </p>
+                    ) : (
+                      <ul className="list-disc list-outside ml-3 text-gray-800 space-y-0.5 leading-relaxed mt-0.5">
+                        {project.bullets.map((b, idx) => (
+                          <li key={idx} className="pl-1">{b}</li>
+                        ))}
+                      </ul>
+                    )}
+
                     {project.technologies && (
                       <p className="text-[10px] text-gray-700 mt-1">
                         <span className="font-bold text-gray-900">Technologies: </span>{project.technologies}

@@ -3,19 +3,19 @@
 import { useState, useRef, useEffect } from "react";
 import { masterResume, MasterResumeData, SectionKey } from "@/src/data/masterResume";
 import { ResumeDocument } from "@/src/components/ResumeDocument";
-import { 
-  Sparkles, 
-  Printer, 
-  Loader2, 
-  Edit3, 
-  Wand2, 
-  ChevronDown, 
-  Eye, 
-  EyeOff, 
-  Plus, 
-  Trash2, 
-  ArrowUp, 
-  ArrowDown 
+import {
+  Sparkles,
+  Printer,
+  Loader2,
+  Edit3,
+  Wand2,
+  ChevronDown,
+  Eye,
+  EyeOff,
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown
 } from "lucide-react";
 
 export default function Home() {
@@ -332,12 +332,19 @@ export default function Home() {
                   <span className="text-xs font-semibold text-zinc-200 uppercase tracking-wider">Universal Font Style</span>
                   <select
                     value={resumeData.styles.fontFamily}
-                    onChange={(e) => setResumeData({ ...resumeData, styles: { ...resumeData.styles, fontFamily: e.target.value } })}
-                    className="p-1.5 text-xs bg-zinc-950 border border-zinc-700 text-zinc-100 rounded focus:outline-none"
+                    onChange={(e) =>
+                      setResumeData({
+                        ...resumeData,
+                        styles: { ...resumeData.styles, fontFamily: e.target.value },
+                      })
+                    }
+                    className="p-1.5 text-xs bg-zinc-950 border border-zinc-700 text-zinc-100 rounded focus:outline-none cursor-pointer"
                   >
-                    <option value="font-sans">Sans-Serif (Arial/Inter)</option>
-                    <option value="font-serif">Serif (Times New Roman)</option>
-                    <option value="font-mono">Monospace (Code)</option>
+                    <option value="font-sans">Inter (Modern Sans)</option>
+                    <option value="font-serif">Lora (Editorial Serif)</option>
+                    <option value="font-merriweather">Merriweather (Classic Serif)</option>
+                    <option value="font-roboto">Roboto (Clean Sans)</option>
+                    <option value="font-mono">Geist Mono (Code / Monospace)</option>
                   </select>
                 </div>
 
@@ -361,11 +368,10 @@ export default function Home() {
                       return (
                         <div
                           key={key}
-                          className={`flex items-center justify-between p-2 rounded border transition ${
-                            isVisible
-                              ? "bg-blue-950/40 border-blue-600/50 text-blue-300"
-                              : "bg-zinc-950 border-zinc-800 text-zinc-500 line-through"
-                          }`}
+                          className={`flex items-center justify-between p-2 rounded border transition ${isVisible
+                            ? "bg-blue-950/40 border-blue-600/50 text-blue-300"
+                            : "bg-zinc-950 border-zinc-800 text-zinc-500 line-through"
+                            }`}
                         >
                           <button
                             onClick={() => toggleSection(key)}
@@ -603,7 +609,32 @@ export default function Home() {
                     {resumeData.allProjects.map((project, idx) => (
                       <div key={project.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-[11px] font-semibold text-zinc-400">Project #{idx + 1}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold text-zinc-400">Project #{idx + 1}</span>
+
+                            {/* Input Mode Toggle Switch */}
+                            <div className="flex items-center bg-zinc-950 border border-zinc-800 rounded p-0.5 text-[10px]">
+                              <button
+                                onClick={() => updateProject(idx, "inputMode", "list")}
+                                className={`px-2 py-0.5 rounded transition ${(project.inputMode || "list") === "list"
+                                    ? "bg-blue-600 text-white font-semibold"
+                                    : "text-zinc-400 hover:text-zinc-200"
+                                  }`}
+                              >
+                                List
+                              </button>
+                              <button
+                                onClick={() => updateProject(idx, "inputMode", "paragraph")}
+                                className={`px-2 py-0.5 rounded transition ${project.inputMode === "paragraph"
+                                    ? "bg-blue-600 text-white font-semibold"
+                                    : "text-zinc-400 hover:text-zinc-200"
+                                  }`}
+                              >
+                                Paragraph
+                              </button>
+                            </div>
+                          </div>
+
                           <button
                             onClick={() => deleteProject(idx)}
                             className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
@@ -644,14 +675,28 @@ export default function Home() {
                           </div>
                         </div>
 
-                        <div>
-                          <span className="text-[10px] text-zinc-400 font-bold block mb-1">Bullet Points (One per line)</span>
-                          <textarea
-                            value={project.bullets.join('\n')}
-                            onChange={(e) => updateProject(idx, "bullets", e.target.value.split('\n'))}
-                            className={`w-full h-28 whitespace-pre-wrap ${inputClass}`}
-                          />
-                        </div>
+                        {/* Dynamic Description Input Box */}
+                        {project.inputMode === "paragraph" ? (
+                          <div>
+                            <span className="text-[10px] text-zinc-400 font-bold block mb-1">Paragraph Description</span>
+                            <textarea
+                              value={project.description ?? project.bullets.join(" ")}
+                              onChange={(e) => updateProject(idx, "description", e.target.value)}
+                              className={`w-full h-28 ${inputClass}`}
+                              placeholder="Enter detailed project paragraph..."
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-[10px] text-zinc-400 font-bold block mb-1">Bullet Points (One per line)</span>
+                            <textarea
+                              value={project.bullets.join('\n')}
+                              onChange={(e) => updateProject(idx, "bullets", e.target.value.split('\n'))}
+                              className={`w-full h-28 whitespace-pre-wrap ${inputClass}`}
+                              placeholder="Enter bullet points..."
+                            />
+                          </div>
+                        )}
 
                         <div>
                           <span className="text-[10px] text-zinc-400 font-bold block mb-1">Technologies</span>
