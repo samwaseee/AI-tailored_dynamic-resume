@@ -212,11 +212,26 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
                 Publications
               </h2>
               <ul className={`px-2 list-disc list-outside ml-3 text-gray-800 space-y-0.5 ${s.publicationTextSize}`}>
-                {data.publications.map((pub, idx) => (
-                  <li key={idx} className="pl-1">
-                    {pub.authors}, "{pub.title}," <span className="italic">{pub.venue}</span>. DOI: {pub.doi}
-                  </li>
-                ))}
+                {data.publications.map((pub, idx) => {
+                  // Normalizes full URLs or raw DOI strings into a valid link href
+                  const doiHref = pub.doi.startsWith("http")
+                    ? pub.doi
+                    : `https://doi.org/${pub.doi.replace(/^doi:\s*/i, "")}`;
+
+                  return (
+                    <li key={idx} className="pl-1">
+                      {pub.authors}, "{pub.title}," <span className="italic">{pub.venue}</span>. DOI:{" "}
+                      <a
+                        href={doiHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:underline font-medium"
+                      >
+                        {pub.doi}
+                      </a>
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           ) : null;

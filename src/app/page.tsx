@@ -165,6 +165,28 @@ export default function Home() {
     });
   };
 
+  const addPublication = () => {
+    setResumeData((prev) => ({
+      ...prev,
+      publications: [
+        ...(prev.publications || []),
+        {
+          authors: "",
+          title: "",
+          venue: "",
+          doi: "",
+        },
+      ],
+    }));
+  };
+
+  const deletePublication = (index: number) => {
+    setResumeData((prev) => ({
+      ...prev,
+      publications: prev.publications.filter((_, idx) => idx !== index),
+    }));
+  };
+
   const updateCertification = (idx: number, field: string, val: string) => {
     const newCerts = [...(resumeData.certifications || [])];
     newCerts[idx] = { ...newCerts[idx], [field]: val };
@@ -617,8 +639,8 @@ export default function Home() {
                               <button
                                 onClick={() => updateProject(idx, "inputMode", "list")}
                                 className={`px-2 py-0.5 rounded transition ${(project.inputMode || "list") === "list"
-                                    ? "bg-blue-600 text-white font-semibold"
-                                    : "text-zinc-400 hover:text-zinc-200"
+                                  ? "bg-blue-600 text-white font-semibold"
+                                  : "text-zinc-400 hover:text-zinc-200"
                                   }`}
                               >
                                 List
@@ -626,8 +648,8 @@ export default function Home() {
                               <button
                                 onClick={() => updateProject(idx, "inputMode", "paragraph")}
                                 className={`px-2 py-0.5 rounded transition ${project.inputMode === "paragraph"
-                                    ? "bg-blue-600 text-white font-semibold"
-                                    : "text-zinc-400 hover:text-zinc-200"
+                                  ? "bg-blue-600 text-white font-semibold"
+                                  : "text-zinc-400 hover:text-zinc-200"
                                   }`}
                               >
                                 Paragraph
@@ -735,7 +757,7 @@ export default function Home() {
                   </div>
                 </details>
 
-                {/* Publications */}
+                {/* Publications Section */}
                 <details className="group border border-zinc-800 rounded-lg bg-zinc-900 overflow-hidden">
                   <summary className="flex cursor-pointer items-center justify-between bg-zinc-900 px-4 py-3 font-semibold text-zinc-200 text-xs uppercase tracking-wider hover:bg-zinc-800 transition">
                     <span className="flex items-center gap-2">
@@ -750,13 +772,75 @@ export default function Home() {
                   </summary>
                   <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
                     {resumeData.publications.map((pub, idx) => (
-                      <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm grid grid-cols-2 gap-2">
-                        <input type="text" value={pub.authors} onChange={(e) => updatePublication(idx, "authors", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Authors" />
-                        <input type="text" value={pub.title} onChange={(e) => updatePublication(idx, "title", e.target.value)} className={`${inputClass} col-span-2`} placeholder="Title" />
-                        <input type="text" value={pub.venue} onChange={(e) => updatePublication(idx, "venue", e.target.value)} className={inputClass} placeholder="Venue" />
-                        <input type="text" value={pub.doi} onChange={(e) => updatePublication(idx, "doi", e.target.value)} className={inputClass} placeholder="DOI" />
+                      <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
+                        {/* Entry Header & Delete */}
+                        <div className="flex justify-between items-center">
+                          <span className="text-[11px] font-semibold text-zinc-400">Publication #{idx + 1}</span>
+                          <button
+                            onClick={() => deletePublication(idx)}
+                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                          >
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
+
+                        {/* Authors Field */}
+                        <div>
+                          <label className="text-[10px] text-zinc-400 font-bold block mb-1">Authors</label>
+                          <input
+                            type="text"
+                            value={pub.authors}
+                            onChange={(e) => updatePublication(idx, "authors", e.target.value)}
+                            className={`w-full ${inputClass}`}
+                            placeholder="e.g., S. R. Wasi, M. Mustari"
+                          />
+                        </div>
+
+                        {/* Paper Title Field */}
+                        <div>
+                          <label className="text-[10px] text-zinc-400 font-bold block mb-1">Paper Title</label>
+                          <input
+                            type="text"
+                            value={pub.title}
+                            onChange={(e) => updatePublication(idx, "title", e.target.value)}
+                            className={`w-full ${inputClass} font-semibold text-white`}
+                            placeholder="e.g., Temporal-Decay Adaptive Federated Ensemble"
+                          />
+                        </div>
+
+                        {/* Venue & DOI / URL Grid */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="text-[10px] text-zinc-400 font-bold block mb-1">Conference / Journal Venue</label>
+                            <input
+                              type="text"
+                              value={pub.venue}
+                              onChange={(e) => updatePublication(idx, "venue", e.target.value)}
+                              className={inputClass}
+                              placeholder="e.g., IEEE QPAIN 2026"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[10px] text-zinc-400 font-bold block mb-1">DOI / Direct Link</label>
+                            <input
+                              type="text"
+                              value={pub.doi}
+                              onChange={(e) => updatePublication(idx, "doi", e.target.value)}
+                              className={inputClass}
+                              placeholder="10.1109/... or https://doi.org/..."
+                            />
+                          </div>
+                        </div>
                       </div>
                     ))}
+
+                    {/* Add New Entry Button */}
+                    <button
+                      onClick={addPublication}
+                      className="w-full py-2.5 text-xs text-blue-400 font-semibold bg-blue-950/30 hover:bg-blue-900/50 rounded-lg border border-blue-900/50 flex items-center justify-center gap-1.5 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add New Publication
+                    </button>
                   </div>
                 </details>
 
