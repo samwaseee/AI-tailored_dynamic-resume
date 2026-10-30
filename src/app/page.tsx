@@ -305,7 +305,7 @@ export default function Home() {
 
       <main className="min-h-screen bg-zinc-800 flex flex-col xl:flex-row">
         {/* Control Panel */}
-        <div className="w-full xl:w-125 shrink-0 flex flex-col border-r border-zinc-800 bg-zinc-950 h-screen sticky top-0 overflow-hidden print:hidden">
+        <div className="w-full xl:w-125 shrink-0 flex flex-col border-b xl:border-b-0 xl:border-r border-zinc-800 bg-zinc-950 h-[80dvh] max-h-[850px] xl:h-screen xl:max-h-none xl:sticky xl:top-0 overflow-hidden print:hidden">
 
           {/* Header */}
           <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950">
@@ -433,15 +433,15 @@ export default function Home() {
                     <span>Personal & Links</span>
                     <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
-                  <div className="p-4 grid grid-cols-2 gap-3 bg-zinc-950 border-t border-zinc-800">
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-zinc-950 border-t border-zinc-800">
                     <input type="text" value={resumeData.personalInfo.name} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, name: e.target.value } })} className={inputClass} placeholder="Name" />
                     <input type="text" value={resumeData.personalInfo.title} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, title: e.target.value } })} className={inputClass} placeholder="Title" />
                     <input type="text" value={resumeData.personalInfo.phone} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, phone: e.target.value } })} className={inputClass} placeholder="Phone" />
                     <input type="text" value={resumeData.personalInfo.email} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, email: e.target.value } })} className={inputClass} placeholder="Email" />
-                    <input type="text" value={resumeData.personalInfo.location} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, location: e.target.value } })} className={`${inputClass} col-span-2`} placeholder="Location" />
-                    <input type="text" value={resumeData.personalInfo.portfolioUrl} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, portfolioUrl: e.target.value } })} className={`${inputClass} col-span-2`} placeholder="Portfolio URL" />
-                    <input type="text" value={resumeData.personalInfo.githubUrl} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, githubUrl: e.target.value } })} className={`${inputClass} col-span-2`} placeholder="GitHub URL" />
-                    <input type="text" value={resumeData.personalInfo.linkedinUrl} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, linkedinUrl: e.target.value } })} className={`${inputClass} col-span-2`} placeholder="LinkedIn URL" />
+                    <input type="text" value={resumeData.personalInfo.location} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, location: e.target.value } })} className={`${inputClass} col-span-1 sm:col-span-2`} placeholder="Location" />
+                    <input type="text" value={resumeData.personalInfo.portfolioUrl} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, portfolioUrl: e.target.value } })} className={`${inputClass} col-span-1 sm:col-span-2`} placeholder="Portfolio URL" />
+                    <input type="text" value={resumeData.personalInfo.githubUrl} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, githubUrl: e.target.value } })} className={`${inputClass} col-span-1 sm:col-span-2`} placeholder="GitHub URL" />
+                    <input type="text" value={resumeData.personalInfo.linkedinUrl} onChange={(e) => setResumeData({ ...resumeData, personalInfo: { ...resumeData.personalInfo, linkedinUrl: e.target.value } })} className={`${inputClass} col-span-1 sm:col-span-2`} placeholder="LinkedIn URL" />
                   </div>
                 </details>
 
@@ -585,11 +585,11 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input type="text" value={exp.role} onChange={(e) => updateExperience(idx, "role", e.target.value)} className={`${inputClass} font-bold text-white`} placeholder="Role Title" />
                           <input type="text" value={exp.company} onChange={(e) => updateExperience(idx, "company", e.target.value)} className={inputClass} placeholder="Company / Organization" />
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input type="text" value={exp.location} onChange={(e) => updateExperience(idx, "location", e.target.value)} className={inputClass} placeholder="Location" />
                           <input type="text" value={exp.duration} onChange={(e) => updateExperience(idx, "duration", e.target.value)} className={inputClass} placeholder="Duration (e.g. 2025 - Present)" />
                         </div>
@@ -665,7 +665,7 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input type="text" value={project.title} onChange={(e) => updateProject(idx, "title", e.target.value)} className={`${inputClass} font-bold text-white`} placeholder="Project Title" />
                           <input type="text" value={project.subtitle} onChange={(e) => updateProject(idx, "subtitle", e.target.value)} className={inputClass} placeholder="Subtitle" />
                         </div>
@@ -749,9 +749,9 @@ export default function Home() {
                     </span>
                     <ChevronDown className="h-4 w-4 text-zinc-400 transition-transform group-open:-rotate-180" />
                   </summary>
-                  <div className="p-4 grid grid-cols-2 gap-3 border-t border-zinc-800 bg-zinc-950">
-                    <input type="text" value={resumeData.education.degree} onChange={(e) => setResumeData({ ...resumeData, education: { ...resumeData.education, degree: e.target.value } })} className={`${inputClass} col-span-2`} placeholder="Degree" />
-                    <input type="text" value={resumeData.education.institution} onChange={(e) => setResumeData({ ...resumeData, education: { ...resumeData.education, institution: e.target.value } })} className={`${inputClass} col-span-2`} placeholder="Institution" />
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3 border-t border-zinc-800 bg-zinc-950">
+                    <input type="text" value={resumeData.education.degree} onChange={(e) => setResumeData({ ...resumeData, education: { ...resumeData.education, degree: e.target.value } })} className={`${inputClass} col-span-1 sm:col-span-2`} placeholder="Degree" />
+                    <input type="text" value={resumeData.education.institution} onChange={(e) => setResumeData({ ...resumeData, education: { ...resumeData.education, institution: e.target.value } })} className={`${inputClass} col-span-1 sm:col-span-2`} placeholder="Institution" />
                     <input type="text" value={resumeData.education.cgpa} onChange={(e) => setResumeData({ ...resumeData, education: { ...resumeData.education, cgpa: e.target.value } })} className={inputClass} placeholder="CGPA" />
                     <input type="text" value={resumeData.education.duration} onChange={(e) => setResumeData({ ...resumeData, education: { ...resumeData.education, duration: e.target.value } })} className={inputClass} placeholder="Duration" />
                   </div>
@@ -809,7 +809,7 @@ export default function Home() {
                         </div>
 
                         {/* Venue & DOI / URL Grid */}
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <div>
                             <label className="text-[10px] text-zinc-400 font-bold block mb-1">Conference / Journal Venue</label>
                             <input
@@ -888,7 +888,7 @@ export default function Home() {
                         </div>
 
                         <input type="text" value={cert.name} onChange={(e) => updateCertification(idx, "name", e.target.value)} className={`w-full ${inputClass} font-bold text-white`} placeholder="Certification Name" />
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                           <input type="text" value={cert.issuer} onChange={(e) => updateCertification(idx, "issuer", e.target.value)} className={inputClass} placeholder="Issuer" />
                           <input type="text" value={cert.date} onChange={(e) => updateCertification(idx, "date", e.target.value)} className={inputClass} placeholder="Date" />
                         </div>
@@ -967,7 +967,7 @@ export default function Home() {
         </div>
 
         {/* Live A4 Preview Panel */}
-        <div className="flex-1 bg-zinc-800 flex items-start justify-center p-6 xl:p-12 overflow-auto">
+        <div className="flex-1 min-w-0 bg-zinc-800 flex items-start justify-start 2xl:justify-center p-3 sm:p-6 xl:p-12 overflow-auto">
           <ResumeDocument ref={printRef} data={resumeData} />
         </div>
       </main>

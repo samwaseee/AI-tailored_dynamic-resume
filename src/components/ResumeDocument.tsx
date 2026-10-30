@@ -295,7 +295,7 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
     return (
       <div
         ref={ref}
-        className={`w-[210mm] h-[297mm] bg-white text-gray-900 p-12 shadow-md print:shadow-none print:w-[210mm] print:h-[297mm] print:p-12 ${s.fontFamily} leading-snug`}
+        className={`w-[210mm] h-[297mm] shrink-0 bg-white text-gray-900 p-12 shadow-md print:shadow-none print:w-[210mm] print:h-[297mm] print:p-12 ${s.fontFamily} leading-snug`}
         style={{ boxSizing: "border-box" }}
       >
         {/* Header (Fixed at Top) */}
