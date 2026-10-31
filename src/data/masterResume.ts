@@ -127,16 +127,16 @@ export interface MasterResumeData {
 export const masterResume: MasterResumeData = {
   personalInfo: {
     name: "Samiur Rahman Wasi",
-    title: "Web Developer & AI Developer",
+    title: "Fullstack Developer",
     phone: "+880-18811-46425",
     location: "4224, Chittagong, Bangladesh",
     email: "samwaseee@gmail.com",
-    portfolioUrl: "https://samiur-rahman-wasee.vercel.app/",
+    portfolioUrl: "https://samiur-rahman-wasi.vercel.app/",
     githubUrl: "https://github.com/samwaseee",
-    linkedinUrl: "https://www.linkedin.com/in/samiur-rahman-wasee/",
+    linkedinUrl: "https://www.linkedin.com/in/samiur-rahman-wasi/",
   },
   profileSummary:
-    "Dedicated CS undergrad bridging software engineering and AI. Proven track record of developing responsive full-stack applications, tackling complex algorithms (200+ competitive programming solves), and conducting research in machine learning. Eager to optimize technical processes and build user-centric software.",
+    "Dedicated CSE graduate who builds full-stack web apps with Next.js, Node.js and MongoDB/PostgreSQL, including AI-powered features such as pitch generation. Built three deployed projects with role-based auth and analytics dashboards; co-author of two IEEE papers on ML-based security. 250+ problems solved on Codeforces. Seeking a full-stack developer role.",
   skills: {
     expertise: [
       "Next.js",
@@ -168,24 +168,33 @@ export const masterResume: MasterResumeData = {
     categories: [
       {
         label: "Languages",
-        items: ["JavaScript", "TypeScript", "C++", "Python", "Dart"],
+        items: ["JavaScript", "TypeScript", "Python", "C++", "Dart (Flutter)"],
       },
       {
-        label: "Web Technologies",
+        label: "Frontend",
         items: [
           "Next.js",
           "React",
-          "Node.js",
-          "Express.js",
           "Tailwind CSS",
-          "HTML",
-          "CSS",
           "React Query",
+          "Zustand",
+          "shadcn/ui",
+          "CSS",
         ],
       },
       {
-        label: "Mobile Development",
-        items: ["Flutter", "GetX"],
+        label: "Backend & APIs",
+        items: [
+          "Node.js",
+          "Express.js",
+          "REST APIs",
+          "JWT",
+          "NextAuth",
+          "Zod",
+          "OpenAPI",
+          "Stripe",
+          "MERN",
+        ],
       },
       {
         label: "Databases & Tools",
@@ -194,9 +203,25 @@ export const masterResume: MasterResumeData = {
           "PostgreSQL",
           "Firebase",
           "Git",
-          "REST APIs",
-          "Redux",
-          "JWT",
+          "Axios",
+          "Mongoose",
+          "node-cron",
+          "Gemini API",
+          "Railway",
+        ],
+      },
+      {
+        label: "AI & Machine Learning",
+        items: [
+          "Machine Learning",
+          "Data Analysis",
+          "Model Evaluation",
+          "AI API Integration",
+          "PyTorch",
+          "CNNs",
+          "Vision Transformers",
+          "GNNs",
+          "Quantum Neural Networks",
         ],
       },
     ],
@@ -227,27 +252,27 @@ export const masterResume: MasterResumeData = {
           "https://github.com/saifullah-10/school-management-system-server",
       },
       bullets: [
-        "Custom authentication system for secure login with encrypted credentials ensures robust data protection.",
-        "Different access levels for students, teachers, and admins allowing users to focus on their specific tasks.",
-        "Monitor attendance records and patterns for students and teachers with input access of records.",
-        "Comprehensive tables display real time records for all students, teachers, and courses.",
-      ],
+        "Built attendance tracking with Express/MongoDB endpoints and a Next.js page using TanStack Query.",
+        "Developed 6 REST endpoints and 6 pages for courses, enrollment, students, and teachers.",
+        "Added Next.js middleware that redirects unauthenticated users to login and preserves the target URL.",
+        "Collaborated in a 5-person team using branches and pull requests; deployed on Vercel with a Docker development setup.",
+      ]
     },
     {
       id: "nexus-ai",
       title: "Nexus AI",
       subtitle: "AI Freelance Marketplace",
       links: {
-        live: "https://nexus-ai-nexus.vercel.app/",
+        live: "https://nexus-ai-frontend-eosin.vercel.app/",
         frontend: "https://github.com/samwaseee/Nexus-AI_frontend",
         backend: "https://github.com/samwaseee/Nexus-AI_backend",
       },
       bullets: [
-        "Role-based dashboards (Freelancer, Client, Admin) for gig tracking and profile management via Next.js.",
-        "Secured protected routes and backend communication using NextAuth and JWT-backed Axios interceptors.",
-        "Integrated AI pitch generators, interactive chats, and Recharts analytics with Zod-validated forms.",
-        "Streamlined full-stack integration by generating a comprehensive OpenAPI specification for backend REST routes.",
-      ],
+        "Built Freelancer, Client, and Admin dashboards with middleware-enforced role-based route access.",
+        "Connected NextAuth to a JWT backend and used an Axios interceptor to attach tokens to API requests.",
+        "Built an Express/MongoDB API with refresh-token rotation, bcrypt, role guards, and rate limiting.",
+        "Added a per-user rate-limited Gemini pitch builder and career coach; documented the API in Swagger.",
+      ]
     },
     {
       id: "promptforge",
@@ -259,12 +284,13 @@ export const masterResume: MasterResumeData = {
         backend: "https://github.com/samwaseee/promtforge-backend",
       },
       bullets: [
-        "A highly scalable full-stack e-commerce platform using Next.js and React, allowing users to discover, securely purchase, and store production-ready AI prompts in a centralized vault.",
-        "Developed comprehensive seller and admin dashboards leveraging Tailwind CSS and Recharts to deliver real-time revenue tracking, analytics, and complex approval workflows.",
-        "Implemented secure authentication, protected routes, and role-based access guards using Firebase OAuth paired with a JWT-backed API client.",
+        "Built a prompt marketplace with Stripe Checkout, signed webhooks, and a vault for purchased prompts.",
+        "Masked prompt text in public API responses so full content is delivered only through paid orders.",
+        "Built an admin approval queue for seller prompts with audit logging and weekly cron log cleanup.",
+        "Verified Firebase ID tokens server-side, issued JWTs, and enforced admin routes with role middleware.",
       ],
       technologies:
-        "Nextjs, TypeScript, MERN, JWT, Material UI, Framer Motion, React Hook Form, TanStack React Query, used Axios, Recharts, emailJS, flowbite, react fast marquee",
+        "Next.js, MERN, Axios, React Hook Form, Framer Motion, Recharts, Material UI, Mongoose, Passport.js, Helmet, bcrypt, firebase-admin, node-cron, Gemini API, Swagger UI, Stripe, Firebase, JWT",
     },
   ],
   education: {
@@ -306,12 +332,13 @@ export const masterResume: MasterResumeData = {
     {
       id: "ach-1",
       title: "Competitive Programming",
-      details: "Solved 200+ algorithmic problems across platforms including LeetCode, Codeforces, and CodeChef.",
+      details: "Solved 250+ problems on Codeforces.",
     },
     {
       id: "ach-2",
       title: "Datathons & Hackathons",
-      details: "Organized and participated in technical machine learning competitions and datathons at IIUC.",
+      details:
+        "Organized and participated in technical machine learning competitions and datathons at IIUC.",
     },
   ],
   sectionOrder: [
@@ -341,7 +368,7 @@ export const masterResume: MasterResumeData = {
     sectionTitleSize: "text-sm",
     sectionTitleBold: true,
     sectionTitleBg: "bg-gray-200",
-    skillsLayout: "tier",
+    skillsLayout: "category",
     certificationsTitle: "Certifications & Training",
     achievementsTitle: "Competitive Programming & Open Source",
     summaryTextSize: "text-[12px]",

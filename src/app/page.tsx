@@ -54,11 +54,16 @@ export default function Home() {
       setResumeData((prev) => {
         const newData = { ...prev };
         if (data.selectedSkills) {
+          const selectedSkills = new Set<string>(data.selectedSkills);
           newData.skills = {
             ...newData.skills,
-            expertise: masterResume.skills.expertise.filter(s => data.selectedSkills.includes(s)),
-            comfortable: masterResume.skills.comfortable.filter(s => data.selectedSkills.includes(s)),
-            familiar: masterResume.skills.familiar.filter(s => data.selectedSkills.includes(s)),
+            expertise: masterResume.skills.expertise.filter(s => selectedSkills.has(s)),
+            comfortable: masterResume.skills.comfortable.filter(s => selectedSkills.has(s)),
+            familiar: masterResume.skills.familiar.filter(s => selectedSkills.has(s)),
+            categories: masterResume.skills.categories?.map((category) => ({
+              ...category,
+              items: category.items.filter((skill) => selectedSkills.has(skill)),
+            })).filter((category) => category.items.length > 0),
           };
         }
         if (data.selectedProjectIds) {
