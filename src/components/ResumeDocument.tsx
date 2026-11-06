@@ -178,7 +178,7 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
                     )}
 
                     {project.technologies && (
-                      <p className="text-[10px] text-gray-700 mt-1">
+                      <p className="text-[11px] text-gray-700 mt-3">
                         <span className="font-bold text-gray-900">Technologies: </span>{project.technologies}
                       </p>
                     )}

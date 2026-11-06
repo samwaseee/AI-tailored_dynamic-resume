@@ -23,6 +23,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "edit">("ai");
   const [isMounted, setIsMounted] = useState(false);
+  const [skillDrafts, setSkillDrafts] = useState(() => ({
+    expertise: masterResume.skills.expertise.join(", "),
+    comfortable: masterResume.skills.comfortable.join(", "),
+    familiar: masterResume.skills.familiar.join(", "),
+    categories: (masterResume.skills.categories || []).map((category) => category.items.join(", ")),
+  }));
 
   useEffect(() => {
     setIsMounted(true);
@@ -51,21 +57,34 @@ export default function Home() {
 
       const data = await res.json();
 
-      setResumeData((prev) => {
-        const newData = { ...prev };
-        if (data.selectedSkills) {
-          const selectedSkills = new Set<string>(data.selectedSkills);
-          newData.skills = {
-            ...newData.skills,
-            expertise: masterResume.skills.expertise.filter(s => selectedSkills.has(s)),
-            comfortable: masterResume.skills.comfortable.filter(s => selectedSkills.has(s)),
-            familiar: masterResume.skills.familiar.filter(s => selectedSkills.has(s)),
+      const selectedSkills = data.selectedSkills
+        ? new Set<string>(data.selectedSkills)
+        : null;
+      const tailoredSkills = selectedSkills
+        ? {
+            ...masterResume.skills,
+            expertise: masterResume.skills.expertise.filter((skill) => selectedSkills.has(skill)),
+            comfortable: masterResume.skills.comfortable.filter((skill) => selectedSkills.has(skill)),
+            familiar: masterResume.skills.familiar.filter((skill) => selectedSkills.has(skill)),
             categories: masterResume.skills.categories?.map((category) => ({
               ...category,
               items: category.items.filter((skill) => selectedSkills.has(skill)),
             })).filter((category) => category.items.length > 0),
-          };
-        }
+          }
+        : null;
+
+      if (tailoredSkills) {
+        setSkillDrafts({
+          expertise: tailoredSkills.expertise.join(", "),
+          comfortable: tailoredSkills.comfortable.join(", "),
+          familiar: tailoredSkills.familiar.join(", "),
+          categories: (tailoredSkills.categories || []).map((category) => category.items.join(", ")),
+        });
+      }
+
+      setResumeData((prev) => {
+        const newData = { ...prev };
+        if (tailoredSkills) newData.skills = tailoredSkills;
         if (data.selectedProjectIds) {
           const filtered = masterResume.allProjects.filter((p) => data.selectedProjectIds.includes(p.id));
           newData.allProjects = filtered.length > 0 ? filtered : masterResume.allProjects;
@@ -244,6 +263,10 @@ export default function Home() {
       ...(resumeData.skills.categories || []),
       { label: "New Category", items: ["Skill 1", "Skill 2"] }
     ];
+    setSkillDrafts((prev) => ({
+      ...prev,
+      categories: [...prev.categories, "Skill 1, Skill 2"],
+    }));
     setResumeData({
       ...resumeData,
       skills: { ...resumeData.skills, categories: newCategories }
@@ -252,6 +275,10 @@ export default function Home() {
 
   const deleteSkillCategory = (cIdx: number) => {
     const newCategories = (resumeData.skills.categories || []).filter((_, i) => i !== cIdx);
+    setSkillDrafts((prev) => ({
+      ...prev,
+      categories: prev.categories.filter((_, i) => i !== cIdx),
+    }));
     setResumeData({
       ...resumeData,
       skills: { ...resumeData.skills, categories: newCategories }
@@ -276,10 +303,13 @@ export default function Home() {
 
   const adjustSize = (key: keyof MasterResumeData['styles'], direction: 'inc' | 'dec', e: React.MouseEvent) => {
     e.stopPropagation();
-    const sizes = ["text-[9px]", "text-[10px]", "text-[11px]", "text-xs", "text-sm", "text-base"];
+    // Strict pixel sizes array matching your 12px default
+    const sizes = ["text-[9px]", "text-[10px]", "text-[11px]", "text-[12px]", "text-[13px]", "text-[14px]", "text-[16px]"];
     const current = resumeData.styles[key] as string;
     let idx = sizes.indexOf(current);
-    if (idx === -1) idx = 2;
+    
+    // If not found in the array, default to index 3 ("text-[12px]") to match your initial state
+    if (idx === -1) idx = 3;
 
     if (direction === 'inc' && idx < sizes.length - 1) idx++;
     if (direction === 'dec' && idx > 0) idx--;
@@ -501,15 +531,51 @@ export default function Home() {
                       <>
                         <div>
                           <span className="text-[10px] text-zinc-400 font-bold block mb-1">Expertise</span>
-                          <input type="text" value={resumeData.skills.expertise.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, expertise: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
+                          <input
+                            type="text"
+                            value={skillDrafts.expertise}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setSkillDrafts((prev) => ({ ...prev, expertise: value }));
+                              setResumeData((prev) => ({
+                                ...prev,
+                                skills: { ...prev.skills, expertise: value.split(",").map((skill) => skill.trim()) },
+                              }));
+                            }}
+                            className={`w-full ${inputClass}`}
+                          />
                         </div>
                         <div>
                           <span className="text-[10px] text-zinc-400 font-bold block mb-1">Comfortable</span>
-                          <input type="text" value={resumeData.skills.comfortable.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, comfortable: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
+                          <input
+                            type="text"
+                            value={skillDrafts.comfortable}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setSkillDrafts((prev) => ({ ...prev, comfortable: value }));
+                              setResumeData((prev) => ({
+                                ...prev,
+                                skills: { ...prev.skills, comfortable: value.split(",").map((skill) => skill.trim()) },
+                              }));
+                            }}
+                            className={`w-full ${inputClass}`}
+                          />
                         </div>
                         <div>
                           <span className="text-[10px] text-zinc-400 font-bold block mb-1">Familiar</span>
-                          <input type="text" value={resumeData.skills.familiar.join(", ")} onChange={(e) => setResumeData({ ...resumeData, skills: { ...resumeData.skills, familiar: e.target.value.split(",").map(s => s.trim()) } })} className={`w-full ${inputClass}`} />
+                          <input
+                            type="text"
+                            value={skillDrafts.familiar}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setSkillDrafts((prev) => ({ ...prev, familiar: value }));
+                              setResumeData((prev) => ({
+                                ...prev,
+                                skills: { ...prev.skills, familiar: value.split(",").map((skill) => skill.trim()) },
+                              }));
+                            }}
+                            className={`w-full ${inputClass}`}
+                          />
                         </div>
                       </>
                     ) : (
@@ -540,11 +606,24 @@ export default function Home() {
                               />
                               <input
                                 type="text"
-                                value={cat.items.join(", ")}
+                                value={skillDrafts.categories[cIdx] ?? cat.items.join(", ")}
                                 onChange={(e) => {
-                                  const newCats = [...(resumeData.skills.categories || [])];
-                                  newCats[cIdx].items = e.target.value.split(",").map(s => s.trim());
-                                  setResumeData({ ...resumeData, skills: { ...resumeData.skills, categories: newCats } });
+                                  const value = e.target.value;
+                                  setSkillDrafts((prev) => ({
+                                    ...prev,
+                                    categories: prev.categories.map((items, index) => index === cIdx ? value : items),
+                                  }));
+                                  setResumeData((prev) => ({
+                                    ...prev,
+                                    skills: {
+                                      ...prev.skills,
+                                      categories: (prev.skills.categories || []).map((category, index) => (
+                                        index === cIdx
+                                          ? { ...category, items: value.split(",").map((skill) => skill.trim()) }
+                                          : category
+                                      )),
+                                    },
+                                  }));
                                 }}
                                 className={`w-full ${inputClass}`}
                                 placeholder="Items (comma-separated)..."
