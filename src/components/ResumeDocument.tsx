@@ -40,6 +40,10 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
           items: category.items.filter((skill) => skill.trim().length > 0),
         }))
         .filter((category) => category.items.length > 0);
+      const isCategoryLayout = (s.skillsLayout || "tier") === "category";
+      const hasVisibleSkills = isCategoryLayout
+        ? visibleCategories.length > 0
+        : expertise.length > 0 || comfortable.length > 0 || familiar.length > 0;
       const visibleProjects = data.allProjects.filter((project) => !project.hidden);
 
       switch (sectionKey) {
@@ -56,7 +60,7 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
           ) : null;
 
         case "skills":
-          return sec?.skills ? (
+          return sec?.skills && hasVisibleSkills ? (
             <div key="skills" className="mb-2.5">
               <h2 className={`font-bold uppercase tracking-wider mb-1 ${s.sectionTitleSize} ${s.sectionTitleBg} px-2 py-0.5`}>
                 Skills
@@ -227,21 +231,27 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
               <ul className={`px-2 list-disc list-outside ml-3 text-gray-800 space-y-0.5 ${s.publicationTextSize}`}>
                 {data.publications.map((pub, idx) => {
                   // Normalizes full URLs or raw DOI strings into a valid link href
-                  const doiHref = pub.doi.startsWith("http")
-                    ? pub.doi
-                    : `https://doi.org/${pub.doi.replace(/^doi:\s*/i, "")}`;
+                  const doi = pub.doi.trim();
+                  const doiHref = doi.startsWith("http")
+                    ? doi
+                    : `https://doi.org/${doi.replace(/^doi:\s*/i, "")}`;
 
                   return (
                     <li key={pub.id ?? idx} className="pl-1">
-                      {pub.authors}, &quot;{pub.title},&quot; <span className="italic">{pub.venue}</span>. DOI:{" "}
-                      <a
-                        href={doiHref}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hover:underline font-medium"
-                      >
-                        {pub.doi}
-                      </a>
+                      {pub.authors}, &quot;{pub.title},&quot; <span className="italic">{pub.venue}</span>.
+                      {doi && (
+                        <>
+                          {" "}DOI:{" "}
+                          <a
+                            href={doiHref}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="hover:underline font-medium"
+                          >
+                            {doi}
+                          </a>
+                        </>
+                      )}
                     </li>
                   );
                 })}
@@ -314,14 +324,28 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
         {/* Header (Fixed at Top) */}
         <header className="border-b-2 border-gray-800 pb-2 mb-2.5">
           <h1 className={`${s.nameSize} ${s.nameBold ? "font-bold" : "font-normal"} uppercase tracking-wide text-gray-950`}>{data.personalInfo.name}</h1>
-          <p className="text-sm font-semibold text-gray-700 mt-0.5">{data.personalInfo.title}</p>
+          {data.personalInfo.title.trim() && (
+            <p className="text-sm font-semibold text-gray-700 mt-0.5">{data.personalInfo.title}</p>
+          )}
           <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-700 mt-1">
-            <span className="flex items-center gap-1"><Phone size={11} strokeWidth={2.5} /> {data.personalInfo.phone}</span>
-            <span className="flex items-center gap-1"><MapPin size={11} strokeWidth={2.5} /> {data.personalInfo.location}</span>
-            <span className="flex items-center gap-1"><Mail size={11} strokeWidth={2.5} /> {data.personalInfo.email}</span>
-            <a href={data.personalInfo.portfolioUrl || undefined} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-medium hover:underline cursor-pointer text-gray-900"><Globe size={11} strokeWidth={2.5} /> Portfolio</a>
-            <a href={data.personalInfo.githubUrl || undefined} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-medium hover:underline cursor-pointer text-gray-900"><GithubIcon size={11} /> Github</a>
-            <a href={data.personalInfo.linkedinUrl || undefined} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-medium hover:underline cursor-pointer text-gray-900"><LinkedinIcon size={11} /> Linkedin</a>
+            {data.personalInfo.phone.trim() && (
+              <span className="flex items-center gap-1"><Phone size={11} strokeWidth={2.5} /> {data.personalInfo.phone}</span>
+            )}
+            {data.personalInfo.location.trim() && (
+              <span className="flex items-center gap-1"><MapPin size={11} strokeWidth={2.5} /> {data.personalInfo.location}</span>
+            )}
+            {data.personalInfo.email.trim() && (
+              <span className="flex items-center gap-1"><Mail size={11} strokeWidth={2.5} /> {data.personalInfo.email}</span>
+            )}
+            {data.personalInfo.portfolioUrl.trim() && (
+              <a href={data.personalInfo.portfolioUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-medium hover:underline cursor-pointer text-gray-900"><Globe size={11} strokeWidth={2.5} /> Portfolio</a>
+            )}
+            {data.personalInfo.githubUrl.trim() && (
+              <a href={data.personalInfo.githubUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-medium hover:underline cursor-pointer text-gray-900"><GithubIcon size={11} /> Github</a>
+            )}
+            {data.personalInfo.linkedinUrl.trim() && (
+              <a href={data.personalInfo.linkedinUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 font-medium hover:underline cursor-pointer text-gray-900"><LinkedinIcon size={11} /> Linkedin</a>
+            )}
           </div>
         </header>
 

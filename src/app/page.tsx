@@ -12,9 +12,13 @@ import { ResumeDocument } from "@/src/components/ResumeDocument";
 import {
   applyStyleDefault,
   clearDraft,
+  clearImportBase,
   clearStyleDefault,
+  getImportBase,
   loadInitial,
   parseImported,
+  parseImportedData,
+  saveImportBase,
   saveDraft,
   saveStyleDefault,
 } from "@/src/lib/persist";
@@ -60,6 +64,10 @@ function moveItem<T>(arr: T[], index: number, direction: "up" | "down"): T[] {
   return moved;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 export default function Home() {
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
@@ -68,11 +76,21 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [savedNotice, setSavedNotice] = useState("");
   const [tailorError, setTailorError] = useState("");
+  const [pdfImportError, setPdfImportError] = useState("");
+  const [pdfImportLoading, setPdfImportLoading] = useState(false);
+  const [showPdfImportNotice, setShowPdfImportNotice] = useState(false);
+  const [hasImportBase, setHasImportBase] = useState(false);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const pdfImportInputRef = useRef<HTMLInputElement>(null);
   const savedNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextAutosaveRef = useRef(false);
   const undoSnapshotRef = useRef<MasterResumeData | null>(null);
   const [canUndoTailor, setCanUndoTailor] = useState(false);
+  const undoImportSnapshotRef = useRef<{
+    data: MasterResumeData;
+    importBase: MasterResumeData | null;
+  } | null>(null);
+  const [canUndoImport, setCanUndoImport] = useState(false);
   const [resumeData, setResumeData] = useState<MasterResumeData>(masterResume);
   const resumeDataRef = useRef(resumeData);
 
@@ -91,6 +109,7 @@ export default function Home() {
       const initialData = loadInitial();
       setResumeData(initialData);
       setSkillDrafts(syncSkillDrafts(initialData));
+      setHasImportBase(Boolean(getImportBase()));
       setHydrated(true);
     }, 0);
     return () => window.clearTimeout(timeout);
@@ -128,17 +147,46 @@ export default function Home() {
     setLoading(true);
 
     try {
+      const currentData = resumeDataRef.current;
+      const sentSkills = new Set([
+        ...currentData.skills.expertise,
+        ...currentData.skills.comfortable,
+        ...currentData.skills.familiar,
+        ...(currentData.skills.categories || []).flatMap((category) => category.items),
+      ]);
+      const sentProjects = currentData.allProjects.map((project) => ({
+        id: project.id,
+        title: project.title,
+        technologies: project.technologies || "",
+      }));
+
       const res = await fetch("/api/tailor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription }),
+        body: JSON.stringify({
+          jobDescription,
+          skills: currentData.skills,
+          projects: sentProjects,
+        }),
       });
 
-      if (!res.ok) {
+      let data: unknown;
+      try {
+        data = await res.json();
+      } catch {
         throw new Error("Unable to tailor the resume. Please try again.");
       }
 
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(
+          isRecord(data) && typeof data.error === "string"
+            ? data.error
+            : "Unable to tailor the resume. Please try again.",
+        );
+      }
+      if (!isRecord(data)) {
+        throw new Error("Unable to tailor the resume. Please try again.");
+      }
       if (data.error) {
         setTailorError(
           typeof data.error === "string" ? data.error : "Unable to tailor the resume. Please try again.",
@@ -156,15 +204,9 @@ export default function Home() {
         data.selectedProjectIds.every((id: unknown) => typeof id === "string")
         ? new Set<string>(data.selectedProjectIds)
         : null;
-      const masterSkills = new Set([
-        ...masterResume.skills.expertise,
-        ...masterResume.skills.comfortable,
-        ...masterResume.skills.familiar,
-        ...(masterResume.skills.categories || []).flatMap((category) => category.items),
-      ]);
       const keepSkill = (skill: string) =>
-        !masterSkills.has(skill) || selectedSkills?.has(skill);
-      const currentSkills = resumeDataRef.current.skills;
+        !sentSkills.has(skill) || selectedSkills?.has(skill);
+      const currentSkills = currentData.skills;
       const tailoredSkills = selectedSkills
         ? {
             ...currentSkills,
@@ -196,10 +238,10 @@ export default function Home() {
         const newData = { ...prev };
         if (tailoredSkills) newData.skills = tailoredSkills;
         if (selectedProjectIds) {
-          const masterProjectIds = new Set(masterResume.allProjects.map((project) => project.id));
+          const sentProjectIds = new Set(sentProjects.map((project) => project.id));
           newData.allProjects = prev.allProjects.map((project) => ({
             ...project,
-            hidden: masterProjectIds.has(project.id)
+            hidden: sentProjectIds.has(project.id)
               ? !selectedProjectIds.has(project.id)
               : project.hidden,
           }));
@@ -310,6 +352,9 @@ export default function Home() {
 
     try {
       const importedData = parseImported(await file.text());
+      undoImportSnapshotRef.current = null;
+      setCanUndoImport(false);
+      setShowPdfImportNotice(false);
       undoSnapshotRef.current = null;
       setCanUndoTailor(false);
       setResumeData(importedData);
@@ -321,16 +366,219 @@ export default function Home() {
     }
   };
 
+  const handlePdfImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      setPdfImportError("Please select a PDF file.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setPdfImportError("The PDF is too large (maximum 4 MB).");
+      return;
+    }
+    if (!window.confirm("This replaces your current resume content. Style is kept.")) return;
+
+    setPdfImportError("");
+    setShowPdfImportNotice(false);
+    setPdfImportLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/import-pdf", {
+        method: "POST",
+        body: formData,
+      });
+      let result: unknown;
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error(
+          response.status === 413
+            ? "The PDF is too large."
+            : "Unable to import this PDF. Please try again.",
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          isRecord(result) && typeof result.error === "string"
+            ? result.error
+            : response.status === 413
+              ? "The PDF is too large."
+              : "Unable to import this PDF. Please try again.",
+        );
+      }
+      if (!isRecord(result) || result.error) {
+        throw new Error(
+          isRecord(result) && typeof result.error === "string"
+            ? result.error
+            : "Unable to import this PDF. Please try again.",
+        );
+      }
+
+      const importedData = parseImportedData(result.data);
+      const importedCategories = importedData.skills.categories || [];
+      const hasImportedSkills = [
+        ...importedData.skills.expertise,
+        ...importedData.skills.comfortable,
+        ...importedData.skills.familiar,
+        ...importedCategories.flatMap((category) => category.items),
+      ].some((skill) => skill.trim());
+      const hasImportedContent =
+        importedData.personalInfo.name.trim().length > 0 ||
+        importedData.experience.some((item) =>
+          [item.role, item.company, item.location, item.duration, ...item.bullets].some((text) => text.trim()),
+        ) ||
+        importedData.allProjects.some((project) =>
+          [
+            project.title,
+            project.subtitle,
+            project.technologies || "",
+            project.bullets.join(" "),
+            project.links.live,
+            project.links.frontend,
+            project.links.backend,
+          ].some((text) => text.trim()),
+        ) ||
+        Object.values(importedData.education).some((value) => value.trim()) ||
+        hasImportedSkills;
+      if (!hasImportedContent) {
+        throw new Error("This doesn't look like a resume. Nothing was changed.");
+      }
+
+      const sections = {
+        ...resumeDataRef.current.sections,
+        profile: Boolean(
+          importedData.profileSummary.trim() ||
+          Object.values(importedData.personalInfo).some((value) => value.trim()),
+        ),
+        skills: hasImportedSkills,
+        experience: importedData.experience.length > 0,
+        projects: importedData.allProjects.length > 0,
+        education: Object.values(importedData.education).some((value) => value.trim()),
+        publications: importedData.publications.length > 0,
+        certifications: (importedData.certifications || []).length > 0,
+        achievements: (importedData.achievements || []).length > 0,
+      };
+      const importedResume: MasterResumeData = {
+        ...resumeDataRef.current,
+        personalInfo: importedData.personalInfo,
+        profileSummary: importedData.profileSummary,
+        skills: importedData.skills,
+        experience: importedData.experience,
+        allProjects: importedData.allProjects,
+        education: importedData.education,
+        publications: importedData.publications,
+        certifications: importedData.certifications,
+        achievements: importedData.achievements,
+        styles: {
+          ...resumeDataRef.current.styles,
+          skillsLayout: importedCategories.length > 0 ? "category" : "tier",
+        },
+        sections,
+        sectionOrder: resumeDataRef.current.sectionOrder,
+      };
+
+      undoImportSnapshotRef.current = null;
+      setCanUndoImport(false);
+      undoImportSnapshotRef.current = {
+        data: structuredClone(resumeDataRef.current),
+        importBase: getImportBase(),
+      };
+      setCanUndoImport(true);
+      undoSnapshotRef.current = null;
+      setCanUndoTailor(false);
+      setResumeData(importedResume);
+      setSkillDrafts(syncSkillDrafts(importedResume));
+      setShowPdfImportNotice(true);
+      if (saveImportBase(importedResume)) {
+        setHasImportBase(true);
+      } else {
+        clearImportBase();
+        setHasImportBase(false);
+        console.error("Unable to save the PDF import reset point to local storage.");
+        setPdfImportError("Imported, but the reset point could not be saved in this browser.");
+      }
+    } catch (error) {
+      console.error("Failed to import PDF resume:", error);
+      setPdfImportError(
+        error instanceof Error ? error.message : "Unable to import this PDF. Please try again.",
+      );
+    } finally {
+      setPdfImportLoading(false);
+    }
+  };
+
   const handleReset = () => {
-    if (!window.confirm("Reset resume content to the master resume? Your saved style will be kept.")) return;
+    const importBase = getImportBase();
+    const confirmMessage = importBase
+      ? "Reset resume content to the last PDF import? Saved style will be kept."
+      : "Reset resume content to the master resume? Your saved style will be kept.";
+    if (!window.confirm(confirmMessage)) return;
     if (!clearDraft()) window.alert("Unable to clear the saved resume draft.");
+    undoImportSnapshotRef.current = null;
+    setCanUndoImport(false);
+    setShowPdfImportNotice(false);
     undoSnapshotRef.current = null;
     setCanUndoTailor(false);
-    const resetData = applyStyleDefault(masterResume);
+    const resetData = applyStyleDefault({
+      ...(importBase ?? masterResume),
+      styles: resumeData.styles,
+      sectionOrder: resumeData.sectionOrder,
+    }, importBase ? { keepSections: true } : undefined);
     skipNextAutosaveRef.current = true;
     setResumeData(resetData);
     setSkillDrafts(syncSkillDrafts(resetData));
     showSavedNotice("Reset");
+  };
+
+  const handleUndoImport = () => {
+    const snapshot = undoImportSnapshotRef.current;
+    if (!snapshot) return;
+
+    undoImportSnapshotRef.current = null;
+    setCanUndoImport(false);
+    if (snapshot.importBase) {
+      saveImportBase(snapshot.importBase);
+      setHasImportBase(true);
+    } else {
+      clearImportBase();
+      setHasImportBase(false);
+    }
+    setShowPdfImportNotice(false);
+    setResumeData(snapshot.data);
+    setSkillDrafts(syncSkillDrafts(snapshot.data));
+  };
+
+  const handleUseDefaultResume = () => {
+    if (!window.confirm("Replace the imported resume with the default resume? Your current style will be kept.")) {
+      return;
+    }
+
+    if (!clearImportBase()) {
+      console.error("Unable to clear the saved PDF import base.");
+      window.alert("Unable to clear the saved PDF import base.");
+    }
+    if (!clearDraft()) {
+      console.error("Unable to clear the saved resume draft.");
+      window.alert("Unable to clear the saved resume draft.");
+    }
+    setHasImportBase(false);
+    setPdfImportError("");
+    undoImportSnapshotRef.current = null;
+    setCanUndoImport(false);
+    setShowPdfImportNotice(false);
+    undoSnapshotRef.current = null;
+    setCanUndoTailor(false);
+    const defaultResume = applyStyleDefault({
+      ...masterResume,
+      styles: resumeData.styles,
+      sectionOrder: resumeData.sectionOrder,
+    }, { keepSections: true });
+    setResumeData(defaultResume);
+    setSkillDrafts(syncSkillDrafts(defaultResume));
   };
 
   const handleUndoTailor = () => {
@@ -597,8 +845,23 @@ export default function Home() {
               Export
             </button>
             <button onClick={() => importInputRef.current?.click()} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
-              Import
+              Import JSON
             </button>
+            <button
+              onClick={() => pdfImportInputRef.current?.click()}
+              disabled={pdfImportLoading}
+              className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
+            >
+              {pdfImportLoading ? "Importing PDF..." : "Import PDF"}
+            </button>
+            {canUndoImport && (
+              <button
+                onClick={handleUndoImport}
+                className="rounded border border-emerald-800 bg-zinc-900 px-2 py-1 text-[11px] text-emerald-300 hover:bg-zinc-800"
+              >
+                Undo import
+              </button>
+            )}
             <input
               ref={importInputRef}
               type="file"
@@ -607,14 +870,44 @@ export default function Home() {
               className="hidden"
               aria-label="Import resume JSON"
             />
+            <input
+              ref={pdfImportInputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={handlePdfImport}
+              className="hidden"
+              aria-label="Import resume PDF"
+            />
             <button onClick={handleReset} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
               Reset
             </button>
+            {hasImportBase && (
+              <button onClick={handleUseDefaultResume} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
+                Use default resume
+              </button>
+            )}
             <button onClick={handleClearStyle} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
               Clear saved style
             </button>
             {savedNotice && <span role="status" className="text-[11px] text-emerald-400">{savedNotice}</span>}
           </div>
+          {pdfImportError && (
+            <p role="alert" className="border-b border-zinc-800 bg-zinc-950 px-4 py-2 text-[11px] text-red-400">
+              {pdfImportError}
+            </p>
+          )}
+          {showPdfImportNotice && (
+            <div role="status" className="flex items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-950 px-4 py-2 text-[11px] text-emerald-400">
+              <span>Imported from PDF. Please review dates, links and DOIs.</span>
+              <button
+                onClick={() => setShowPdfImportNotice(false)}
+                className="rounded px-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                aria-label="Dismiss PDF import notice"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex border-b border-zinc-800 text-xs font-medium bg-zinc-950">
@@ -630,7 +923,7 @@ export default function Home() {
           <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-zinc-950">
             {activeTab === "ai" ? (
               <div className="flex flex-col gap-4">
-                <p className="text-xs text-zinc-400">Paste the job description. The AI will cross-reference your master file to select the best skills and projects.</p>
+                <p className="text-xs text-zinc-400">Paste the job description. The AI will use the skills and projects in your current resume.</p>
                 <textarea
                   value={jobDescription}
                   onChange={(e) => setJobDescription(e.target.value)}
