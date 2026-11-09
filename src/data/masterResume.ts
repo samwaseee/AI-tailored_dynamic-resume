@@ -2,6 +2,7 @@ export interface Project {
   id: string;
   title: string;
   subtitle: string;
+  hidden?: boolean;
   links: { live: string; frontend: string; backend: string };
   inputMode?: "list" | "paragraph";
   description?: string;
@@ -19,6 +20,7 @@ export interface ExperienceItem {
 }
 
 export interface Publication {
+  id?: string;
   authors: string;
   title: string;
   venue: string;

@@ -1,8 +1,23 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { masterResume, MasterResumeData, SectionKey } from "@/src/data/masterResume";
+import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  ExperienceItem,
+  masterResume,
+  MasterResumeData,
+  Project,
+  SectionKey,
+} from "@/src/data/masterResume";
 import { ResumeDocument } from "@/src/components/ResumeDocument";
+import {
+  applyStyleDefault,
+  clearDraft,
+  clearStyleDefault,
+  loadInitial,
+  parseImported,
+  saveDraft,
+  saveStyleDefault,
+} from "@/src/lib/persist";
 import {
   Sparkles,
   Printer,
@@ -18,23 +33,86 @@ import {
   ArrowDown
 } from "lucide-react";
 
+type SkillDrafts = {
+  expertise: string;
+  comfortable: string;
+  familiar: string;
+  categories: string[];
+};
+
+function syncSkillDrafts(data: MasterResumeData): SkillDrafts {
+  return {
+    expertise: data.skills.expertise.join(", "),
+    comfortable: data.skills.comfortable.join(", "),
+    familiar: data.skills.familiar.join(", "),
+    categories: (data.skills.categories || []).map((category) => category.items.join(", ")),
+  };
+}
+
+function moveItem<T>(arr: T[], index: number, direction: "up" | "down"): T[] {
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (index < 0 || index >= arr.length || targetIndex < 0 || targetIndex >= arr.length) {
+    return arr;
+  }
+
+  const moved = [...arr];
+  [moved[index], moved[targetIndex]] = [moved[targetIndex], moved[index]];
+  return moved;
+}
+
 export default function Home() {
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"ai" | "edit">("ai");
-  const [isMounted, setIsMounted] = useState(false);
-  const [skillDrafts, setSkillDrafts] = useState(() => ({
-    expertise: masterResume.skills.expertise.join(", "),
-    comfortable: masterResume.skills.comfortable.join(", "),
-    familiar: masterResume.skills.familiar.join(", "),
-    categories: (masterResume.skills.categories || []).map((category) => category.items.join(", ")),
-  }));
+  const [skillDrafts, setSkillDrafts] = useState(() => syncSkillDrafts(masterResume));
+  const [hydrated, setHydrated] = useState(false);
+  const [savedNotice, setSavedNotice] = useState("");
+  const [tailorError, setTailorError] = useState("");
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const savedNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextAutosaveRef = useRef(false);
+  const undoSnapshotRef = useRef<MasterResumeData | null>(null);
+  const [canUndoTailor, setCanUndoTailor] = useState(false);
+  const [resumeData, setResumeData] = useState<MasterResumeData>(masterResume);
+  const resumeDataRef = useRef(resumeData);
 
   useEffect(() => {
-    setIsMounted(true);
+    resumeDataRef.current = resumeData;
+  }, [resumeData]);
+
+  const showSavedNotice = useCallback((message = "Saved") => {
+    setSavedNotice(message);
+    if (savedNoticeTimerRef.current) clearTimeout(savedNoticeTimerRef.current);
+    savedNoticeTimerRef.current = setTimeout(() => setSavedNotice(""), 2000);
   }, []);
 
-  const [resumeData, setResumeData] = useState<MasterResumeData>(masterResume);
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const initialData = loadInitial();
+      setResumeData(initialData);
+      setSkillDrafts(syncSkillDrafts(initialData));
+      setHydrated(true);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    if (skipNextAutosaveRef.current) {
+      skipNextAutosaveRef.current = false;
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      if (saveDraft(resumeData)) showSavedNotice();
+      else console.error("Unable to save resume draft to local storage.");
+    }, 400);
+    return () => clearTimeout(timeout);
+  }, [hydrated, resumeData, showSavedNotice]);
+
+  useEffect(() => () => {
+    if (savedNoticeTimerRef.current) clearTimeout(savedNoticeTimerRef.current);
+  }, []);
 
   const printRef = useRef<HTMLDivElement>(null);
   const handlePrint = () => {
@@ -46,6 +124,7 @@ export default function Home() {
 
   const handleTailor = async () => {
     if (!jobDescription.trim()) return;
+    setTailorError("");
     setLoading(true);
 
     try {
@@ -55,23 +134,54 @@ export default function Home() {
         body: JSON.stringify({ jobDescription }),
       });
 
-      const data = await res.json();
+      if (!res.ok) {
+        throw new Error("Unable to tailor the resume. Please try again.");
+      }
 
-      const selectedSkills = data.selectedSkills
+      const data = await res.json();
+      if (data.error) {
+        setTailorError(
+          typeof data.error === "string" ? data.error : "Unable to tailor the resume. Please try again.",
+        );
+        return;
+      }
+
+      const selectedSkills = Array.isArray(data.selectedSkills) &&
+        data.selectedSkills.length > 0 &&
+        data.selectedSkills.every((skill: unknown) => typeof skill === "string")
         ? new Set<string>(data.selectedSkills)
         : null;
+      const selectedProjectIds = Array.isArray(data.selectedProjectIds) &&
+        data.selectedProjectIds.length > 0 &&
+        data.selectedProjectIds.every((id: unknown) => typeof id === "string")
+        ? new Set<string>(data.selectedProjectIds)
+        : null;
+      const masterSkills = new Set([
+        ...masterResume.skills.expertise,
+        ...masterResume.skills.comfortable,
+        ...masterResume.skills.familiar,
+        ...(masterResume.skills.categories || []).flatMap((category) => category.items),
+      ]);
+      const keepSkill = (skill: string) =>
+        !masterSkills.has(skill) || selectedSkills?.has(skill);
+      const currentSkills = resumeDataRef.current.skills;
       const tailoredSkills = selectedSkills
         ? {
-            ...masterResume.skills,
-            expertise: masterResume.skills.expertise.filter((skill) => selectedSkills.has(skill)),
-            comfortable: masterResume.skills.comfortable.filter((skill) => selectedSkills.has(skill)),
-            familiar: masterResume.skills.familiar.filter((skill) => selectedSkills.has(skill)),
-            categories: masterResume.skills.categories?.map((category) => ({
+            ...currentSkills,
+            expertise: currentSkills.expertise.filter(keepSkill),
+            comfortable: currentSkills.comfortable.filter(keepSkill),
+            familiar: currentSkills.familiar.filter(keepSkill),
+            categories: currentSkills.categories?.map((category) => ({
               ...category,
-              items: category.items.filter((skill) => selectedSkills.has(skill)),
-            })).filter((category) => category.items.length > 0),
+              items: category.items.filter(keepSkill),
+            })),
           }
         : null;
+
+      if (tailoredSkills || selectedProjectIds) {
+        undoSnapshotRef.current = structuredClone(resumeDataRef.current);
+        setCanUndoTailor(true);
+      }
 
       if (tailoredSkills) {
         setSkillDrafts({
@@ -85,14 +195,22 @@ export default function Home() {
       setResumeData((prev) => {
         const newData = { ...prev };
         if (tailoredSkills) newData.skills = tailoredSkills;
-        if (data.selectedProjectIds) {
-          const filtered = masterResume.allProjects.filter((p) => data.selectedProjectIds.includes(p.id));
-          newData.allProjects = filtered.length > 0 ? filtered : masterResume.allProjects;
+        if (selectedProjectIds) {
+          const masterProjectIds = new Set(masterResume.allProjects.map((project) => project.id));
+          newData.allProjects = prev.allProjects.map((project) => ({
+            ...project,
+            hidden: masterProjectIds.has(project.id)
+              ? !selectedProjectIds.has(project.id)
+              : project.hidden,
+          }));
         }
         return newData;
       });
     } catch (err) {
       console.error(err);
+      setTailorError(
+        err instanceof Error ? err.message : "Unable to tailor the resume. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -110,31 +228,144 @@ export default function Home() {
       "achievements",
     ];
 
-    const currentOrder = resumeData.sectionOrder || defaultOrder;
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-
-    if (targetIndex < 0 || targetIndex >= currentOrder.length) return;
-
-    const newOrder = [...currentOrder];
-    const [movedItem] = newOrder.splice(index, 1);
-    newOrder.splice(targetIndex, 0, movedItem);
-
-    setResumeData({
-      ...resumeData,
-      sectionOrder: newOrder,
-    });
+    setResumeData((prev) => ({
+      ...prev,
+      sectionOrder: moveItem(prev.sectionOrder || defaultOrder, index, direction),
+    }));
   };
 
-  const updateProject = (idx: number, field: string, val: any) => {
-    const newProjects = [...resumeData.allProjects];
-    newProjects[idx] = { ...newProjects[idx], [field]: val };
-    setResumeData({ ...resumeData, allProjects: newProjects });
+  const moveSkillCategory = (index: number, direction: "up" | "down") => {
+    setResumeData((prev) => ({
+      ...prev,
+      skills: {
+        ...prev.skills,
+        categories: moveItem(prev.skills.categories || [], index, direction),
+      },
+    }));
+    setSkillDrafts((prev) => ({
+      ...prev,
+      categories: moveItem(prev.categories, index, direction),
+    }));
+  };
+
+  const moveExperience = (index: number, direction: "up" | "down") => {
+    setResumeData((prev) => ({
+      ...prev,
+      experience: moveItem(prev.experience || [], index, direction),
+    }));
+  };
+
+  const moveProject = (index: number, direction: "up" | "down") => {
+    setResumeData((prev) => ({
+      ...prev,
+      allProjects: moveItem(prev.allProjects, index, direction),
+    }));
+  };
+
+  const movePublication = (index: number, direction: "up" | "down") => {
+    setResumeData((prev) => ({
+      ...prev,
+      publications: moveItem(prev.publications, index, direction),
+    }));
+  };
+
+  const moveCertification = (index: number, direction: "up" | "down") => {
+    setResumeData((prev) => ({
+      ...prev,
+      certifications: moveItem(prev.certifications || [], index, direction),
+    }));
+  };
+
+  const moveAchievement = (index: number, direction: "up" | "down") => {
+    setResumeData((prev) => ({
+      ...prev,
+      achievements: moveItem(prev.achievements || [], index, direction),
+    }));
+  };
+
+  const handleSaveStyle = () => {
+    if (saveStyleDefault(resumeData)) showSavedNotice("Style saved");
+    else window.alert("Unable to save the style in this browser.");
+  };
+
+  const handleExport = () => {
+    try {
+      const blob = new Blob([JSON.stringify(resumeData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "resume-backup.json";
+      link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showSavedNotice("Exported");
+    } catch {
+      window.alert("Unable to export the resume.");
+    }
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    try {
+      const importedData = parseImported(await file.text());
+      undoSnapshotRef.current = null;
+      setCanUndoTailor(false);
+      setResumeData(importedData);
+      setSkillDrafts(syncSkillDrafts(importedData));
+      showSavedNotice("Imported");
+    } catch (error) {
+      console.error("Failed to import resume:", error);
+      window.alert("Unable to import this file. Please select a valid resume JSON backup.");
+    }
+  };
+
+  const handleReset = () => {
+    if (!window.confirm("Reset resume content to the master resume? Your saved style will be kept.")) return;
+    if (!clearDraft()) window.alert("Unable to clear the saved resume draft.");
+    undoSnapshotRef.current = null;
+    setCanUndoTailor(false);
+    const resetData = applyStyleDefault(masterResume);
+    skipNextAutosaveRef.current = true;
+    setResumeData(resetData);
+    setSkillDrafts(syncSkillDrafts(resetData));
+    showSavedNotice("Reset");
+  };
+
+  const handleUndoTailor = () => {
+    const previousData = undoSnapshotRef.current;
+    if (!previousData) return;
+
+    undoSnapshotRef.current = null;
+    setCanUndoTailor(false);
+    setResumeData(previousData);
+    setSkillDrafts(syncSkillDrafts(previousData));
+  };
+
+  const handleClearStyle = () => {
+    if (clearStyleDefault()) showSavedNotice("Saved style cleared");
+    else window.alert("Unable to clear the saved style.");
+  };
+
+  const updateProject = <K extends keyof Project>(idx: number, field: K, val: Project[K]) => {
+    setResumeData((prev) => ({
+      ...prev,
+      allProjects: prev.allProjects.map((project, index) =>
+        index === idx ? { ...project, [field]: val } : project,
+      ),
+    }));
   };
 
   const updateProjectLinksUrl = (idx: number, linkField: 'live' | 'frontend' | 'backend', urlVal: string) => {
-    const newProjects = [...resumeData.allProjects];
-    newProjects[idx].links = { ...newProjects[idx].links, [linkField]: urlVal };
-    setResumeData({ ...resumeData, allProjects: newProjects });
+    setResumeData((prev) => ({
+      ...prev,
+      allProjects: prev.allProjects.map((project, index) =>
+        index === idx
+          ? { ...project, links: { ...project.links, [linkField]: urlVal } }
+          : project,
+      ),
+    }));
   };
 
   const addProject = () => {
@@ -160,10 +391,17 @@ export default function Home() {
     });
   };
 
-  const updateExperience = (idx: number, field: string, val: any) => {
-    const newExp = [...(resumeData.experience || [])];
-    newExp[idx] = { ...newExp[idx], [field]: val };
-    setResumeData({ ...resumeData, experience: newExp });
+  const updateExperience = <K extends keyof ExperienceItem>(
+    idx: number,
+    field: K,
+    val: ExperienceItem[K],
+  ) => {
+    setResumeData((prev) => ({
+      ...prev,
+      experience: (prev.experience || []).map((item, index) =>
+        index === idx ? { ...item, [field]: val } : item,
+      ),
+    }));
   };
 
   const addExperience = () => {
@@ -195,6 +433,7 @@ export default function Home() {
       publications: [
         ...(prev.publications || []),
         {
+          id: `pub-${Date.now()}`,
           authors: "",
           title: "",
           venue: "",
@@ -350,6 +589,33 @@ export default function Home() {
             </button>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 px-4 py-2 border-b border-zinc-800 bg-zinc-950">
+            <button onClick={handleSaveStyle} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
+              Save style
+            </button>
+            <button onClick={handleExport} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
+              Export
+            </button>
+            <button onClick={() => importInputRef.current?.click()} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
+              Import
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept="application/json,.json"
+              onChange={handleImport}
+              className="hidden"
+              aria-label="Import resume JSON"
+            />
+            <button onClick={handleReset} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
+              Reset
+            </button>
+            <button onClick={handleClearStyle} className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-200 hover:bg-zinc-800">
+              Clear saved style
+            </button>
+            {savedNotice && <span role="status" className="text-[11px] text-emerald-400">{savedNotice}</span>}
+          </div>
+
           {/* Tabs */}
           <div className="flex border-b border-zinc-800 text-xs font-medium bg-zinc-950">
             <button onClick={() => setActiveTab("ai")} className={`flex-1 py-3 flex items-center justify-center gap-1.5 transition ${activeTab === "ai" ? "text-blue-400 border-b-2 border-blue-500 bg-zinc-900/50" : "text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300"}`}>
@@ -373,12 +639,24 @@ export default function Home() {
                 />
                 <button
                   onClick={handleTailor}
-                  disabled={!isMounted || loading || !jobDescription.trim()}
+                  disabled={!hydrated || loading || !jobDescription.trim()}
                   suppressHydrationWarning
                   className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium py-3 px-4 rounded-lg disabled:opacity-50 transition border border-blue-500 shadow-lg shadow-blue-900/20"
                 >
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                   Tailor Resume
+                </button>
+                {tailorError && (
+                  <p role="alert" className="text-xs text-red-400">
+                    {tailorError}
+                  </p>
+                )}
+                <button
+                  onClick={handleUndoTailor}
+                  disabled={!canUndoTailor}
+                  className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-800 disabled:opacity-40"
+                >
+                  Undo tailor
                 </button>
               </div>
             ) : (
@@ -539,7 +817,7 @@ export default function Home() {
                               setSkillDrafts((prev) => ({ ...prev, expertise: value }));
                               setResumeData((prev) => ({
                                 ...prev,
-                                skills: { ...prev.skills, expertise: value.split(",").map((skill) => skill.trim()) },
+                                skills: { ...prev.skills, expertise: value.split(",").map((skill) => skill.trim()).filter(Boolean) },
                               }));
                             }}
                             className={`w-full ${inputClass}`}
@@ -555,7 +833,7 @@ export default function Home() {
                               setSkillDrafts((prev) => ({ ...prev, comfortable: value }));
                               setResumeData((prev) => ({
                                 ...prev,
-                                skills: { ...prev.skills, comfortable: value.split(",").map((skill) => skill.trim()) },
+                                skills: { ...prev.skills, comfortable: value.split(",").map((skill) => skill.trim()).filter(Boolean) },
                               }));
                             }}
                             className={`w-full ${inputClass}`}
@@ -571,7 +849,7 @@ export default function Home() {
                               setSkillDrafts((prev) => ({ ...prev, familiar: value }));
                               setResumeData((prev) => ({
                                 ...prev,
-                                skills: { ...prev.skills, familiar: value.split(",").map((skill) => skill.trim()) },
+                                skills: { ...prev.skills, familiar: value.split(",").map((skill) => skill.trim()).filter(Boolean) },
                               }));
                             }}
                             className={`w-full ${inputClass}`}
@@ -585,12 +863,20 @@ export default function Home() {
                           <div key={cIdx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-[11px] font-semibold text-zinc-400">Category #{cIdx + 1}</span>
-                              <button
-                                onClick={() => deleteSkillCategory(cIdx)}
-                                className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
-                              >
-                                <Trash2 className="w-3 h-3" /> Delete
-                              </button>
+                              <div className="flex items-center gap-1">
+                                <button disabled={cIdx === 0} onClick={() => moveSkillCategory(cIdx, "up")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Up" aria-label="Move category up">
+                                  <ArrowUp size={13} />
+                                </button>
+                                <button disabled={cIdx === (resumeData.skills.categories?.length || 0) - 1} onClick={() => moveSkillCategory(cIdx, "down")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Down" aria-label="Move category down">
+                                  <ArrowDown size={13} />
+                                </button>
+                                <button
+                                  onClick={() => deleteSkillCategory(cIdx)}
+                                  className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                                >
+                                  <Trash2 className="w-3 h-3" /> Delete
+                                </button>
+                              </div>
                             </div>
                             <div className="space-y-1.5">
                               <input
@@ -619,7 +905,7 @@ export default function Home() {
                                       ...prev.skills,
                                       categories: (prev.skills.categories || []).map((category, index) => (
                                         index === cIdx
-                                          ? { ...category, items: value.split(",").map((skill) => skill.trim()) }
+                                          ? { ...category, items: value.split(",").map((skill) => skill.trim()).filter(Boolean) }
                                           : category
                                       )),
                                     },
@@ -661,12 +947,20 @@ export default function Home() {
                       <div key={exp.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
                         <div className="flex justify-between items-center">
                           <span className="text-[11px] font-semibold text-zinc-400">Experience #{idx + 1}</span>
-                          <button
-                            onClick={() => deleteExperience(idx)}
-                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button disabled={idx === 0} onClick={() => moveExperience(idx, "up")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Up" aria-label="Move experience up">
+                              <ArrowUp size={13} />
+                            </button>
+                            <button disabled={idx === (resumeData.experience || []).length - 1} onClick={() => moveExperience(idx, "down")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Down" aria-label="Move experience down">
+                              <ArrowDown size={13} />
+                            </button>
+                            <button
+                              onClick={() => deleteExperience(idx)}
+                              className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -713,7 +1007,7 @@ export default function Home() {
                   </summary>
                   <div className="p-4 space-y-6 border-t border-zinc-800 bg-zinc-950">
                     {resumeData.allProjects.map((project, idx) => (
-                      <div key={project.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
+                      <div key={project.id} className={`p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3 ${project.hidden ? "opacity-50" : ""}`}>
                         <div className="flex justify-between items-center">
                           <div className="flex items-center gap-2">
                             <span className="text-[11px] font-semibold text-zinc-400">Project #{idx + 1}</span>
@@ -741,12 +1035,29 @@ export default function Home() {
                             </div>
                           </div>
 
-                          <button
-                            onClick={() => deleteProject(idx)}
-                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => updateProject(idx, "hidden", !project.hidden)}
+                              className="flex items-center gap-1 rounded px-2 py-1 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                              title={project.hidden ? "Show project" : "Hide project"}
+                              aria-label={project.hidden ? "Show project" : "Hide project"}
+                            >
+                              {project.hidden ? <EyeOff size={13} /> : <Eye size={13} />}
+                              {project.hidden ? "Show" : "Hide"}
+                            </button>
+                            <button disabled={idx === 0} onClick={() => moveProject(idx, "up")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Up" aria-label="Move project up">
+                              <ArrowUp size={13} />
+                            </button>
+                            <button disabled={idx === resumeData.allProjects.length - 1} onClick={() => moveProject(idx, "down")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Down" aria-label="Move project down">
+                              <ArrowDown size={13} />
+                            </button>
+                            <button
+                              onClick={() => deleteProject(idx)}
+                              className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -856,16 +1167,24 @@ export default function Home() {
                   </summary>
                   <div className="p-4 space-y-4 border-t border-zinc-800 bg-zinc-950">
                     {resumeData.publications.map((pub, idx) => (
-                      <div key={idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
+                      <div key={pub.id ?? idx} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-3">
                         {/* Entry Header & Delete */}
                         <div className="flex justify-between items-center">
                           <span className="text-[11px] font-semibold text-zinc-400">Publication #{idx + 1}</span>
-                          <button
-                            onClick={() => deletePublication(idx)}
-                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button disabled={idx === 0} onClick={() => movePublication(idx, "up")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Up" aria-label="Move publication up">
+                              <ArrowUp size={13} />
+                            </button>
+                            <button disabled={idx === resumeData.publications.length - 1} onClick={() => movePublication(idx, "down")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Down" aria-label="Move publication down">
+                              <ArrowDown size={13} />
+                            </button>
+                            <button
+                              onClick={() => deletePublication(idx)}
+                              className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
                         </div>
 
                         {/* Authors Field */}
@@ -963,12 +1282,20 @@ export default function Home() {
                       <div key={cert.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[11px] font-semibold text-zinc-400">Item #{idx + 1}</span>
-                          <button
-                            onClick={() => deleteCertification(idx)}
-                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button disabled={idx === 0} onClick={() => moveCertification(idx, "up")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Up" aria-label="Move certification up">
+                              <ArrowUp size={13} />
+                            </button>
+                            <button disabled={idx === (resumeData.certifications || []).length - 1} onClick={() => moveCertification(idx, "down")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Down" aria-label="Move certification down">
+                              <ArrowDown size={13} />
+                            </button>
+                            <button
+                              onClick={() => deleteCertification(idx)}
+                              className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
                         </div>
 
                         <input type="text" value={cert.name} onChange={(e) => updateCertification(idx, "name", e.target.value)} className={`w-full ${inputClass} font-bold text-white`} placeholder="Certification Name" />
@@ -1023,12 +1350,20 @@ export default function Home() {
                       <div key={item.id} className="p-3 bg-zinc-900 border border-zinc-800 rounded-md shadow-sm space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-[11px] font-semibold text-zinc-400">Item #{idx + 1}</span>
-                          <button
-                            onClick={() => deleteAchievement(idx)}
-                            className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
-                          >
-                            <Trash2 className="w-3 h-3" /> Delete
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button disabled={idx === 0} onClick={() => moveAchievement(idx, "up")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Up" aria-label="Move achievement up">
+                              <ArrowUp size={13} />
+                            </button>
+                            <button disabled={idx === (resumeData.achievements || []).length - 1} onClick={() => moveAchievement(idx, "down")} className="p-1 hover:bg-zinc-800 disabled:opacity-30 rounded text-zinc-300" title="Move Down" aria-label="Move achievement down">
+                              <ArrowDown size={13} />
+                            </button>
+                            <button
+                              onClick={() => deleteAchievement(idx)}
+                              className="text-red-400 hover:text-red-300 text-[11px] flex items-center gap-1 px-2 py-0.5 bg-red-950/40 rounded border border-red-900/40 transition"
+                            >
+                              <Trash2 className="w-3 h-3" /> Delete
+                            </button>
+                          </div>
                         </div>
 
                         <input type="text" value={item.title} onChange={(e) => updateAchievement(idx, "title", e.target.value)} className={`w-full ${inputClass} font-bold text-white`} placeholder="Title" />

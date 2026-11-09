@@ -31,6 +31,17 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
     const sec = data.sections;
 
     const renderSection = (sectionKey: SectionKey) => {
+      const expertise = data.skills.expertise.filter((skill) => skill.trim().length > 0);
+      const comfortable = data.skills.comfortable.filter((skill) => skill.trim().length > 0);
+      const familiar = data.skills.familiar.filter((skill) => skill.trim().length > 0);
+      const visibleCategories = (data.skills.categories || [])
+        .map((category) => ({
+          ...category,
+          items: category.items.filter((skill) => skill.trim().length > 0),
+        }))
+        .filter((category) => category.items.length > 0);
+      const visibleProjects = data.allProjects.filter((project) => !project.hidden);
+
       switch (sectionKey) {
         case "profile":
           return sec?.profile && data.profileSummary ? (
@@ -54,36 +65,36 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
                 <div className={`px-2 flex ${s.skillsTextSize}`}>
                   {/* Left Column: All Tier Titles */}
                   <div className="w-24 shrink-0 font-bold space-y-0.5">
-                    {data.skills.expertise && data.skills.expertise.length > 0 && <div>Expertise</div>}
-                    {data.skills.comfortable && data.skills.comfortable.length > 0 && <div>Comfortable</div>}
-                    {data.skills.familiar && data.skills.familiar.length > 0 && <div>Familiar</div>}
+                    {expertise.length > 0 && <div>Expertise</div>}
+                    {comfortable.length > 0 && <div>Comfortable</div>}
+                    {familiar.length > 0 && <div>Familiar</div>}
                   </div>
 
                   {/* Right Column: All Bullet Lists */}
                   <div className="flex-1 text-zinc-700 space-y-0.5">
-                    {data.skills.expertise && data.skills.expertise.length > 0 && (
-                      <div>: {data.skills.expertise.join(" • ")}</div>
+                    {expertise.length > 0 && (
+                      <div>: {expertise.join(" • ")}</div>
                     )}
-                    {data.skills.comfortable && data.skills.comfortable.length > 0 && (
-                      <div>: {data.skills.comfortable.join(" • ")}</div>
+                    {comfortable.length > 0 && (
+                      <div>: {comfortable.join(" • ")}</div>
                     )}
-                    {data.skills.familiar && data.skills.familiar.length > 0 && (
-                      <div>: {data.skills.familiar.join(" • ")}</div>
+                    {familiar.length > 0 && (
+                      <div>: {familiar.join(" • ")}</div>
                     )}
                   </div>
                 </div>
               ) : (
                 <div className={`px-2 flex ${s.skillsTextSize}`}>
-                  {/* Left Column: All Category Titles */}
+                  {/* Left Column: Category Titles */}
                   <div className="w-32 shrink-0 font-bold space-y-0.5">
-                    {data.skills.categories?.map((cat, idx) => (
+                    {visibleCategories.map((cat, idx) => (
                       <div key={idx}>{cat.label}</div>
                     ))}
                   </div>
 
-                  {/* Right Column: All Category Bullet Lists */}
+                  {/* Right Column: Category Bullet Lists */}
                   <div className="flex-1 text-zinc-700 space-y-0.5">
-                    {data.skills.categories?.map((cat, idx) => (
+                    {visibleCategories.map((cat, idx) => (
                       <div key={idx}>: {cat.items.join(", ")}</div>
                     ))}
                   </div>
@@ -119,13 +130,14 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
           ) : null;
 
         case "projects":
-          return sec?.projects && data.allProjects && data.allProjects.length > 0 ? (
+          {
+            return sec?.projects && visibleProjects.length > 0 ? (
             <section key="projects" className="mb-2.5">
               <h2 className={`${s.sectionTitleSize} ${s.sectionTitleBold ? "font-bold" : "font-normal"} uppercase tracking-wider text-gray-900 ${s.sectionTitleBg} px-2 py-0.5 mb-1`}>
                 Projects
               </h2>
               <div className={`px-2 space-y-2.5 ${s.projectTextSize}`}>
-                {data.allProjects.map((project) => (
+                {visibleProjects.map((project) => (
                   <div key={project.id}>
                     {/* Header & Links */}
                     <div className="flex justify-between items-center mb-0.5">
@@ -187,6 +199,7 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
               </div>
             </section>
           ) : null;
+          }
 
         case "education":
           return sec?.education ? (
@@ -219,8 +232,8 @@ export const ResumeDocument = forwardRef<HTMLDivElement, ResumeDocumentProps>(
                     : `https://doi.org/${pub.doi.replace(/^doi:\s*/i, "")}`;
 
                   return (
-                    <li key={idx} className="pl-1">
-                      {pub.authors}, "{pub.title}," <span className="italic">{pub.venue}</span>. DOI:{" "}
+                    <li key={pub.id ?? idx} className="pl-1">
+                      {pub.authors}, &quot;{pub.title},&quot; <span className="italic">{pub.venue}</span>. DOI:{" "}
                       <a
                         href={doiHref}
                         target="_blank"
